@@ -119,6 +119,11 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 				log.Println("empty jsonrpc response, maybe no valid middleware added")
 				return
 			}
+			_, err = server.MiddlewareChain.OnJSONRpcResponse(rpcSession)
+			if err != nil {
+				log.Println("OnJSONRpcResponse error", err)
+				return
+			}
 			resBytes, err := EncodeJSONRPCResponse(rpcRes)
 			if err != nil {
 				log.Println("encodeJSONRPCResponse err", err)

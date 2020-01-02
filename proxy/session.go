@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"github.com/gorilla/websocket"
+	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"net/http"
 )
 
@@ -37,6 +38,9 @@ type ConnectionSession struct {
 	UpstreamTargetConnection     *websocket.Conn
 	UpstreamTargetConnectionDone chan struct{}
 	UpstreamRpcRequestsChan      chan *JSONRpcRequestBundle
+
+	// cache middleware shared fields in connection session
+	RpcCache *utils.MemoryCache
 }
 
 func (connSession *ConnectionSession) Close() {
@@ -50,6 +54,7 @@ func NewConnectionSession(w http.ResponseWriter, r *http.Request, requestConn *w
 		HttpRequest: r,
 		ConnectionDone: make(chan struct{}),
 		RpcRequestsMap: make(map[uint64] chan *JSONRpcResponse),
+		RpcCache: utils.NewMemoryCache(),
 	}
 }
 
@@ -61,8 +66,17 @@ type JSONRpcRequestSession struct {
 	Parameters map[string]interface{}
 
 	RpcResponseFutureChan chan *JSONRpcResponse
+
+	// cache middleware shared fields
+	ResponseSetByCache bool
+
+	// before_cache middleware shared fields
+	MethodNameForCache *string // only used to find cache in cache middleware
 }
 
 func NewJSONRpcRequestSession(conn *ConnectionSession) *JSONRpcRequestSession {
-	return &JSONRpcRequestSession{Conn: conn}
+	return &JSONRpcRequestSession{
+		Conn: conn,
+		ResponseSetByCache: false,
+	}
 }

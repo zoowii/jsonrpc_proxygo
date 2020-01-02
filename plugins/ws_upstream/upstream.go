@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/common"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
+	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"log"
 	"time"
 )
@@ -34,14 +35,15 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSe
 	if err != nil {
 		return
 	}
-	log.Printf("connecting to %s\n", targetEndpoint)
+	utils.Debugf("connecting to %s\n", targetEndpoint)
+	// TODO: connect target in a goroutine
 	// TODO: when target is wss url
 	c, _, err := websocket.DefaultDialer.Dial(targetEndpoint, nil)
 	if err != nil {
 		log.Println("dial:", err)
 		return
 	}
-	log.Printf("connected to %s\n", targetEndpoint)
+	utils.Debugf("connected to %s\n", targetEndpoint)
 	session.UpstreamTargetConnection = c
 	session.UpstreamTargetConnectionDone = make(chan struct{})
 	session.UpstreamRpcRequestsChan = make(chan *proxy.JSONRpcRequestBundle, 1000)
@@ -109,7 +111,7 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSe
 				if err != nil {
 					log.Println("upstream write message error", err)
 					// TODO: notify server.go to close the origin connection
-					close(session.ConnectionDone)
+					//close(session.ConnectionDone)
 					break
 				}
 			}

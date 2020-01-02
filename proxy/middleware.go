@@ -27,12 +27,15 @@ func (chain *MiddlewareChain) Append(middleware Middleware) *MiddlewareChain {
 }
 
 func (chain *MiddlewareChain) InsertHead(middlewares ...Middleware) *MiddlewareChain {
-	for _, middleware := range middlewares {
-		chain.Append(middleware)
+	addCount := len(middlewares)
+	if addCount>0 {
 		count := len(chain.Middlewares)
-		items := make([]Middleware, count)
-		for i, j := 0, count-1; i <= j; i, j = i+1, j-1 {
-			items[i], items[j] = chain.Middlewares[j], chain.Middlewares[i]
+		items := make([]Middleware, count + addCount)
+		for i:=0;i<addCount;i++ {
+			items[i]=middlewares[i]
+		}
+		for i:=0;i<count;i++ {
+			items[i+addCount] = chain.Middlewares[i]
 		}
 		chain.Middlewares = items
 	}
@@ -96,6 +99,7 @@ func (chain *MiddlewareChain) OnJSONRpcRequest(session *JSONRpcRequestSession) (
 	return
 }
 
+// TODO: OnJSONRpcResponse, OnConnectionClosed的调用顺序应该反向，因为没用middleware的单纯的wrap的方式
 func (chain *MiddlewareChain) OnJSONRpcResponse(session *JSONRpcRequestSession) (next bool, err error) {
 	for _, m := range chain.Middlewares {
 		next, err = m.OnJSONRpcResponse(session)
