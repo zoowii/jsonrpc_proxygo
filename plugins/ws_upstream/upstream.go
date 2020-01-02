@@ -129,7 +129,6 @@ func (middleware *WsUpstreamMiddleware) OnConnectionClosed(session *proxy.Connec
 		if err == nil {
 			session.UpstreamTargetConnection = nil
 		}
-		close(session.UpstreamTargetConnectionDone)
 		close(session.UpstreamRpcRequestsChan)
 	}
 	return

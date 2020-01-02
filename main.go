@@ -46,8 +46,13 @@ func main() {
 			if itemConf.ExpireSeconds <= 0 {
 				continue
 			}
+			methodNameForCache, jsonErr := cache.MakeMethodNameForCache(itemConf.Name, itemConf.ParamsForCache)
+			if jsonErr != nil {
+				log.Fatalln("parse cache params error", jsonErr)
+				return
+			}
 			item := &cache.CacheConfigItem{
-				MethodName:    itemConf.Name,
+				MethodName:    methodNameForCache,
 				CacheDuration: time.Duration(itemConf.ExpireSeconds) * time.Second,
 			}
 			cacheMiddleware.AddCacheConfigItem(item)

@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"log"
@@ -15,6 +17,8 @@ type CacheConfigItem struct {
 type CacheMiddleware struct {
 	cacheConfigItems []*CacheConfigItem
 	cacheConfigItemsMap map[string]*CacheConfigItem // methodName => *CacheConfigItem
+
+	rpcCache *utils.MemoryCache
 }
 
 func NewCacheMiddleware(cacheConfigItems ...*CacheConfigItem) *CacheMiddleware {
@@ -22,6 +26,7 @@ func NewCacheMiddleware(cacheConfigItems ...*CacheConfigItem) *CacheMiddleware {
 	result := &CacheMiddleware{
 		cacheConfigItems: nil,
 		cacheConfigItemsMap: cacheConfigItemsMap,
+		rpcCache: utils.NewMemoryCache(),
 	}
 	for _, item := range cacheConfigItems {
 		_ = result.AddCacheConfigItem(item)
@@ -42,9 +47,6 @@ func (middleware *CacheMiddleware) Name() string {
 }
 
 func (middleware *CacheMiddleware) OnConnection(session *proxy.ConnectionSession) (bool, error) {
-	if session.RpcCache == nil {
-		session.RpcCache = utils.NewMemoryCache()
-	}
 	return true, nil
 }
 
@@ -95,13 +97,12 @@ func (middleware *CacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcReques
 	if _, ok := middleware.getCacheConfigItem(session); !ok {
 		return
 	}
-	connSession := session.Conn
-	cacheKey, err := middleware.cacheKeyForRpcMethod(methodNameForCache)
+	cacheKey, err := middleware.cacheKeyForRpcMethod(methodNameForCache, session.Request.Params)
 	if err != nil {
 		log.Fatalln("cache key for rpc method error", err)
 		return
 	}
-	cached, ok := connSession.RpcCache.Get(cacheKey)
+	cached, ok := middleware.rpcCache.Get(cacheKey)
 	if !ok {
 		return
 	}
@@ -113,13 +114,17 @@ func (middleware *CacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcReques
 	session.RequestBytes = cachedItem.responseBytes
 	session.ResponseSetByCache = true
 	next = false
-	utils.Debugf("rpc method-for-cache %s hit cache", methodNameForCache)
+	utils.Debugf("[cache] rpc method-for-cache %s hit cache", methodNameForCache)
 	return
 }
 
-// cache by methodName + fixedParams(when length > 0)
-func (middleware *CacheMiddleware) cacheKeyForRpcMethod(rpcMethodName string) (result string, err error) {
-	result = "cache_rpc_" + rpcMethodName
+// cache by methodName + allRpcParams
+func (middleware *CacheMiddleware) cacheKeyForRpcMethod(rpcMethodName string, rpcParams interface{}) (result string, err error) {
+	rpcParamsBytes, err := json.Marshal(rpcParams)
+	if err != nil {
+		return
+	}
+	result = fmt.Sprintf("cache_rpc_%s$%s", rpcMethodName, string(rpcParamsBytes))
 	return
 }
 
@@ -142,16 +147,15 @@ func (middleware *CacheMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcReque
 	}
 	rpcRes := session.Response
 	rpcResBytes := session.RequestBytes
-	connSession := session.Conn
-	cacheKey, err := middleware.cacheKeyForRpcMethod(methodNameForCache)
+	cacheKey, err := middleware.cacheKeyForRpcMethod(methodNameForCache, session.Request.Params)
 	if err != nil {
 		return
 	}
-	connSession.RpcCache.Set(cacheKey, &rpcResponseCacheItem{
+	middleware.rpcCache.Set(cacheKey, &rpcResponseCacheItem{
 		response: rpcRes,
 		responseBytes: rpcResBytes,
 	}, cacheConfigItem.CacheDuration)
-	utils.Debugf("rpc method-for-cache %s cached\n", methodNameForCache)
+	utils.Debugf("[cache] rpc method-for-cache %s cached\n", methodNameForCache)
 	return
 }
 

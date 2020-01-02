@@ -16,6 +16,7 @@ type ServerConfig struct {
 		// cache plugin config
 		Caches []struct {
 			Name string `json:"name"`
+			ParamsForCache []interface{} `json:"paramsForCache"`
 			ExpireSeconds int64 `json:"expire_seconds"`
 		} `json:"caches"`
 

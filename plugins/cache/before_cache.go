@@ -1,10 +1,8 @@
 package cache
 
-
 import (
 	"encoding/json"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
-	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"log"
 )
 
@@ -72,6 +70,20 @@ func (middleware *BeforeCacheMiddleware) findBeforeCacheConfigItem(rpcReq *proxy
 	return
 }
 
+func MakeMethodNameForCache(methodName string, paramsArray []interface{}) (result string, err error) {
+	result = methodName
+	for i:=0;i<len(paramsArray);i++ {
+		result += "$"
+		argBytes, jsonErr := json.Marshal(paramsArray[i])
+		if jsonErr != nil {
+			err = jsonErr
+			return
+		}
+		result += string(argBytes)
+	}
+	return
+}
+
 func (middleware *BeforeCacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
 	next = true
 	rpcReq := session.Request
@@ -84,18 +96,14 @@ func (middleware *BeforeCacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpc
 	if !parseArrayOk {
 		return
 	}
-	methodNameForCache := rpcReq.Method
-	for i:=0;i<beforeCacheConfigItem.FetchCacheKeyFromParamsCount;i++ {
-		methodNameForCache += "$"
-		argBytes, jsonErr := json.Marshal(rpcParamsArray[i])
-		if jsonErr != nil {
-			log.Println("[before-cache] before_cache middleware parse param json error:", jsonErr)
-			return
-		}
-		methodNameForCache += string(argBytes)
+	fetchCacheKeyFromParamsCount := beforeCacheConfigItem.FetchCacheKeyFromParamsCount
+	methodNameForCache, jsonErr := MakeMethodNameForCache(rpcReq.Method, rpcParamsArray[0:fetchCacheKeyFromParamsCount])
+	if jsonErr != nil {
+		log.Println("[before-cache] before_cache middleware parse param json error:", jsonErr)
+		return
 	}
 	session.MethodNameForCache = &methodNameForCache
-	utils.Debugf("[before-cache] methodNameForCache %s set\n", methodNameForCache)
+	//utils.Debugf("[before-cache] methodNameForCache %s set\n", methodNameForCache)
 	return
 }
 func (middleware *BeforeCacheMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (bool, error) {

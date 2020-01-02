@@ -60,10 +60,13 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 		for {
 			select {
 			case <- ctx.Done():
-			break
+				break
 			case <- connSession.ConnectionDone:
 				break
 			case resBytes := <- rpcResponseBytesChannel:
+				if resBytes == nil {
+					break
+				}
 				err := c.WriteMessage(websocket.TextMessage, resBytes)
 				if err != nil {
 					log.Println("write websocket frame error", err)

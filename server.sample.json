@@ -8,7 +8,7 @@
     },
     "caches": [
       { "name": "dummyMethod", "expire_seconds": 5 },
-      { "name": "call$2$\"getSomeInfoMethod\"", "expire_seconds": 5 }
+      { "name": "call", "paramsForCache": [2, "getSomeInfoMethod"],  "expire_seconds": 5 }
     ],
     "before_cache_configs": [
       {"method": "call", "fetch_cache_key_from_params_count": 2}
