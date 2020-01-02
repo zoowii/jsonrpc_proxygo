@@ -15,6 +15,21 @@ type JSONRpcResponseError struct {
 	Data interface{} `json:"data"`
 }
 
+const (
+	RPC_INTERNAL_ERROR = 10001
+
+	RPC_UPSTREAM_CONNECTION_CLOSED_ERROR = 50001
+	RPC_UPSTREAM_TIMEOUT_ERROR = 50002
+)
+
+func NewJSONRpcResponseError(code int, message string, data interface{}) *JSONRpcResponseError {
+	return &JSONRpcResponseError{
+		Code:    code,
+		Message: message,
+		Data:    data,
+	}
+}
+
 type JSONRpcResponse struct {
 	Id uint64 `json:"id"`
 	JSONRpc string `json:"jsonrpc,omitempty"`
@@ -22,7 +37,16 @@ type JSONRpcResponse struct {
 	Result interface{} `json:"result,omitempty"`
 }
 
-func decodeJSONRPCRequest(message []byte) (req *JSONRpcRequest, err error) {
+func NewJSONRpcResponse(id uint64, result interface{}, err *JSONRpcResponseError) *JSONRpcResponse {
+	return &JSONRpcResponse{
+		Id:      id,
+		JSONRpc: "2.0",
+		Error:   err,
+		Result:  result,
+	}
+}
+
+func DecodeJSONRPCRequest(message []byte) (req *JSONRpcRequest, err error) {
 	req = new(JSONRpcRequest)
 	err = json.Unmarshal(message, &req)
 	if err != nil {
@@ -31,7 +55,16 @@ func decodeJSONRPCRequest(message []byte) (req *JSONRpcRequest, err error) {
 	return
 }
 
-func encodeJSONRPCResponse(res *JSONRpcResponse) (data []byte, err error) {
+func EncodeJSONRPCResponse(res *JSONRpcResponse) (data []byte, err error) {
 	data, err = json.Marshal(res)
+	return
+}
+
+func DecodeJSONRPCResponse(message []byte) (req *JSONRpcResponse, err error) {
+	req = new(JSONRpcResponse)
+	err = json.Unmarshal(message, &req)
+	if err != nil {
+		return
+	}
 	return
 }

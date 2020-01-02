@@ -1,0 +1,10 @@
+{
+  "endpoint": "127.0.0.1:5000",
+  "plugins": {
+    "upstream": {
+      "upstream_endpoints": [
+        "ws://127.0.0.1:3000"
+      ]
+    }
+  }
+}

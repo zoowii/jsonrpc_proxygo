@@ -1,13 +1,12 @@
 package proxy
 
-import "net/http"
-
 type Middleware interface {
+	Name() string
 	// return (continue bool, err error)
-	OnConnection(w http.ResponseWriter, r *http.Request) (bool, error)
-	OnConnectionClosed(w http.ResponseWriter, r *http.Request) (bool, error)
+	OnConnection(session *ConnectionSession) (bool, error)
+	OnConnectionClosed(session *ConnectionSession) (bool, error)
 
-	OnWebSocketFrame(w http.ResponseWriter, r *http.Request, messageType int, message []byte) (bool, error)
+	OnWebSocketFrame(session *JSONRpcRequestSession, messageType int, message []byte) (bool, error)
 	OnJSONRpcRequest(session *JSONRpcRequestSession) (bool, error)
 	OnJSONRpcResponse(session *JSONRpcRequestSession) (bool, error)
 
@@ -32,7 +31,7 @@ func (chain *MiddlewareChain) InsertHead(middlewares ...Middleware) *MiddlewareC
 		chain.Append(middleware)
 		count := len(chain.Middlewares)
 		items := make([]Middleware, count)
-		for i, j := 0, count-1; i < j; i, j = i+1, j-1 {
+		for i, j := 0, count-1; i <= j; i, j = i+1, j-1 {
 			items[i], items[j] = chain.Middlewares[j], chain.Middlewares[i]
 		}
 		chain.Middlewares = items
@@ -40,9 +39,9 @@ func (chain *MiddlewareChain) InsertHead(middlewares ...Middleware) *MiddlewareC
 	return chain
 }
 
-func (chain *MiddlewareChain) OnConnection(w http.ResponseWriter, r *http.Request) (next bool, err error) {
+func (chain *MiddlewareChain) OnConnection(session *ConnectionSession) (next bool, err error) {
 	for _, m := range chain.Middlewares {
-		next, err = m.OnConnection(w, r)
+		next, err = m.OnConnection(session)
 		if err != nil {
 			return
 		}
@@ -53,9 +52,13 @@ func (chain *MiddlewareChain) OnConnection(w http.ResponseWriter, r *http.Reques
 	return
 }
 
-func (chain *MiddlewareChain) OnConnectionClosed(w http.ResponseWriter, r *http.Request) (next bool, err error) {
+func (chain *MiddlewareChain) OnConnectionClosed(session *ConnectionSession) (next bool, err error) {
 	for _, m := range chain.Middlewares {
-		next, err = m.OnConnectionClosed(w, r)
+		if m == nil {
+			panic("null middleware")
+			continue
+		}
+		next, err = m.OnConnectionClosed(session)
 		if err != nil {
 			return
 		}
@@ -66,10 +69,10 @@ func (chain *MiddlewareChain) OnConnectionClosed(w http.ResponseWriter, r *http.
 	return
 }
 
-func (chain *MiddlewareChain) OnWebSocketFrame(w http.ResponseWriter, r *http.Request,
+func (chain *MiddlewareChain) OnWebSocketFrame(session *JSONRpcRequestSession,
 	messageType int, message []byte) (next bool, err error) {
 	for _, m := range chain.Middlewares {
-		next, err = m.OnWebSocketFrame(w, r, messageType, message)
+		next, err = m.OnWebSocketFrame(session, messageType, message)
 		if err != nil {
 			return
 		}

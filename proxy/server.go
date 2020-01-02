@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -43,69 +44,88 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	defer c.Close()
-	defer server.MiddlewareChain.OnConnectionClosed(w, r)
-
-	if _, connErr := server.MiddlewareChain.OnConnection(w, r); connErr != nil {
+	connSession := NewConnectionSession(w, r, c)
+	defer connSession.Close()
+	defer server.MiddlewareChain.OnConnectionClosed(connSession)
+	// must ensure middleware chain not change after calling OnConnection,
+	// otherwise some removed middlewares may not call OnConnectionClosed
+	if _, connErr := server.MiddlewareChain.OnConnection(connSession); connErr != nil {
 		log.Println("OnConnection error", connErr)
 		return
 	}
+	ctx := context.Background()
+	rpcResponseBytesChannel := make(chan []byte, 100000)
+	defer close(rpcResponseBytesChannel)
+	go func() {
+		for {
+			select {
+			case <- ctx.Done():
+			break
+			case <- connSession.ConnectionDone:
+				break
+			case resBytes := <- rpcResponseBytesChannel:
+				err := c.WriteMessage(websocket.TextMessage, resBytes)
+				if err != nil {
+					log.Println("write websocket frame error", err)
+					break
+				}
+			}
+		}
+	}()
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
 			log.Println("read:", err)
 			break
 		}
-		switch mt {
-		case websocket.PingMessage:
-			c.WriteMessage(websocket.PongMessage, []byte("pong"))
-		case websocket.CloseMessage:
-			c.Close()
-			return
-		}
-		rpcSession := NewJSONRpcRequestSession()
-		rpcSession.HttpRequest = r
-		rpcSession.HttpResponse = w
-		_, err = server.MiddlewareChain.OnWebSocketFrame(w, r, mt, message)
+
+		rpcSession := NewJSONRpcRequestSession(connSession)
+
+		_, err = server.MiddlewareChain.OnWebSocketFrame(rpcSession, mt, message)
 		if err != nil {
 			log.Println("OnWebSocketFrame error", err)
 			continue
+		}
+		switch mt {
+		case websocket.CloseMessage:
+			_ = c.Close()
+			return
 		}
 		log.Printf("recv: %s", message)
 		if mt == websocket.BinaryMessage {
 			// binary message should be processed by middlewares, not treated as jsonrpc request
 			continue
 		}
-		rpcReq, err := decodeJSONRPCRequest(message)
+		rpcReq, err := DecodeJSONRPCRequest(message)
 		if err != nil {
 			log.Println("jsonrpc request error", err)
 			continue
 		}
 		rpcSession.Request = rpcReq
+		rpcSession.RequestBytes = message
 		_, err = server.MiddlewareChain.OnJSONRpcRequest(rpcSession)
 		if err != nil {
 			log.Println("OnJSONRpcRequest error", err)
 			continue
 		}
-		 _, err = server.MiddlewareChain.ProcessJSONRpcRequest(rpcSession)
-		if err != nil {
-			log.Println("ProcessJSONRpcRequest error", err)
-			continue
-		}
-		rpcRes := rpcSession.Response
-		if rpcRes == nil {
-			log.Println("empty jsonrpc response, maybe no valid middleware added")
-			continue
-		}
-		resBytes, err := encodeJSONRPCResponse(rpcRes)
-		if err != nil {
-			log.Println("encodeJSONRPCResponse err", err)
-			continue
-		}
-		err = c.WriteMessage(mt, resBytes)
-		if err != nil {
-			log.Println("write message error", err)
-			break
-		}
+		go func() {
+			_, err = server.MiddlewareChain.ProcessJSONRpcRequest(rpcSession)
+			if err != nil {
+				log.Println("ProcessJSONRpcRequest error", err)
+				return
+			}
+			rpcRes := rpcSession.Response
+			if rpcRes == nil {
+				log.Println("empty jsonrpc response, maybe no valid middleware added")
+				return
+			}
+			resBytes, err := EncodeJSONRPCResponse(rpcRes)
+			if err != nil {
+				log.Println("encodeJSONRPCResponse err", err)
+				return
+			}
+			rpcResponseBytesChannel <- resBytes
+		}()
 	}
 }
 
@@ -113,7 +133,6 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
  * Start the proxy server http service
  */
 func (server *ProxyServer) Start() {
-	log.Println("starting proxy server at " + server.Addr)
 	wrappedHandler := func (w http.ResponseWriter, r *http.Request) {
 		server.serverHandler(w, r)
 	}
