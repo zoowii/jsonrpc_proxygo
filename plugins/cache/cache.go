@@ -110,8 +110,18 @@ func (middleware *CacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcReques
 	if !ok {
 		return
 	}
-	session.Response = cachedItem.response
-	session.RequestBytes = cachedItem.responseBytes
+	// need replace cachedItem's rpc request id
+	newRes, err := utils.CloneJSONRpcResponse(cachedItem.response)
+	if err != nil {
+		return
+	}
+	newRes.Id = session.Request.Id
+	newResBytes, err := json.Marshal(newRes)
+	if err != nil {
+		return
+	}
+	session.Response = newRes
+	session.RequestBytes = newResBytes
 	session.ResponseSetByCache = true
 	next = false
 	utils.Debugf("[cache] rpc method-for-cache %s hit cache", methodNameForCache)
@@ -137,7 +147,7 @@ func (middleware *CacheMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcReque
 	next = true
 	if session.ResponseSetByCache {
 		next = false
-		utils.Debug("[cache] ResponseSetByCache set before")
+		//utils.Debug("[cache] ResponseSetByCache set before")
 		return
 	}
 	methodNameForCache := middleware.getMethodNameForCache(session)

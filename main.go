@@ -4,10 +4,12 @@ import (
 	"flag"
 	"github.com/zoowii/jsonrpc_proxygo/config"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/cache"
+	"github.com/zoowii/jsonrpc_proxygo/plugins/load_balancer"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/ws_upstream"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"time"
 )
 
@@ -35,9 +37,26 @@ func main() {
 		return
 	}
 	targetEndpoint := upstreamPluginConf.TargetEndpoints[0]
+	upstreamMiddleware := ws_upstream.NewWsUpstreamMiddleware(targetEndpoint.Url)
 	server.MiddlewareChain.InsertHead(
-		ws_upstream.NewWsUpstreamMiddleware(targetEndpoint),
+		upstreamMiddleware,
 	)
+	if len(upstreamPluginConf.TargetEndpoints) > 1 {
+		loadBalanceMiddleware := load_balancer.NewLoadBalanceMiddleware()
+		for _, itemConf := range upstreamPluginConf.TargetEndpoints {
+			if itemConf.Weight <= 0 {
+				log.Fatalln("invalid upstream weight", itemConf.Weight)
+				return
+			}
+			_, err = url.ParseRequestURI(itemConf.Url)
+			if err != nil {
+				log.Fatalln("invalid upstream target endpoint", itemConf.Url)
+				return
+			}
+			loadBalanceMiddleware.AddUpstreamItem(load_balancer.NewUpstreamItem(itemConf.Url, itemConf.Weight))
+		}
+		server.MiddlewareChain.InsertHead(loadBalanceMiddleware)
+	}
 	cachePluginConf := configInfo.Plugins.Caches
 	if len(cachePluginConf) > 0 {
 		cacheMiddleware := cache.NewCacheMiddleware()

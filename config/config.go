@@ -10,7 +10,10 @@ type ServerConfig struct {
 	Plugins struct {
 		// upstream plugin config
 		Upstream struct {
-			TargetEndpoints []string `json:"upstream_endpoints"`
+			TargetEndpoints []struct{
+				Url string `json:"url"`
+				Weight int64 `json:"weight"`
+			} `json:"upstream_endpoints"`
 		} `json:"upstream"`
 
 		// cache plugin config
