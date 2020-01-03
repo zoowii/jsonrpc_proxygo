@@ -3,30 +3,39 @@ package load_balancer
 // TODO
 
 import (
+	"errors"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
+	"github.com/zoowii/jsonrpc_proxygo/utils"
 )
 
+var upstreamItemIdGen = 0
+
 type UpstreamItem struct {
+	id int
 	TargetEndpoint string
 	Weight int64
+	currentWeight int64
 }
 
-func NewUpstreamItem(targetEndpoint string, weight int64) UpstreamItem {
-	return UpstreamItem{
+func NewUpstreamItem(targetEndpoint string, weight int64) *UpstreamItem {
+	upstreamItemIdGen++
+	return &UpstreamItem{
+		id: upstreamItemIdGen,
 		TargetEndpoint: targetEndpoint,
 		Weight: weight,
+		currentWeight: weight,
 	}
 }
 
 type LoadBalanceMiddleware struct {
-	UpstreamItems []UpstreamItem
+	UpstreamItems []*UpstreamItem
 }
 
 func NewLoadBalanceMiddleware() *LoadBalanceMiddleware {
 	return &LoadBalanceMiddleware{}
 }
 
-func (middleware *LoadBalanceMiddleware) AddUpstreamItem(item UpstreamItem) *LoadBalanceMiddleware {
+func (middleware *LoadBalanceMiddleware) AddUpstreamItem(item *UpstreamItem) *LoadBalanceMiddleware {
 	middleware.UpstreamItems = append(middleware.UpstreamItems, item)
 	return middleware
 }
@@ -35,12 +44,39 @@ func (middleware *LoadBalanceMiddleware) Name() string {
 	return "load_balance"
 }
 
+func (middleware *LoadBalanceMiddleware) selectTargetByWeight() *UpstreamItem {
+	// use WeightedRound-Robin algorithm to select an target to use
+	var totalWeight int64 = 0
+	var maxWeight int64 = -1
+	var maxWeightItem *UpstreamItem = nil
+	for _, item := range middleware.UpstreamItems {
+		totalWeight += item.Weight
+		item.currentWeight += item.Weight
+		if maxWeightItem == nil {
+			maxWeight = item.currentWeight
+			maxWeightItem = item
+		} else if item.currentWeight > maxWeight {
+			maxWeight = item.currentWeight
+			maxWeightItem = item
+		}
+	}
+	if maxWeightItem == nil {
+		return nil
+	}
+	maxWeightItem.currentWeight -= totalWeight
+	return maxWeightItem
+}
+
 func (middleware *LoadBalanceMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
 	next = true
 
-	session.SelectedUpstreamTarget = &middleware.UpstreamItems[0].TargetEndpoint // now just use first upstream target
-
-	// TODO: use WeightedRound-Robin algorithm to select an target to use in session
+	selectedTargetItem := middleware.selectTargetByWeight()
+	if selectedTargetItem == nil {
+		err = errors.New("can't select one upstream target")
+		return
+	}
+	utils.Debugf("[load-balance]selected upstream target item id#%d endpoint: %s\n",selectedTargetItem.id, selectedTargetItem.TargetEndpoint)
+	session.SelectedUpstreamTarget = &selectedTargetItem.TargetEndpoint
 	return
 }
 

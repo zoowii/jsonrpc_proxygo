@@ -14,7 +14,6 @@ import (
 )
 
 func main() {
-	// TODO: load config from yml config file
 	configPath := flag.String("config", "server.json", "configuration file path(default server.json)")
 	flag.Parse()
 	configFileBytes, err := ioutil.ReadFile(*configPath)
