@@ -26,47 +26,8 @@ func (middleware *WsUpstreamMiddleware) Name() string {
 	return "upstream"
 }
 
-func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
-	if session.UpstreamTargetConnection != nil {
-		err = errors.New("when OnConnection, session has connected to upstream target before")
-		return
-	}
-	targetEndpoint, err := common.GetSelectedUpstreamTargetEndpoint(session, &middleware.DefaultTargetEndpoint)
-	if err != nil {
-		return
-	}
-	utils.Debugf("connecting to %s\n", targetEndpoint)
-	// TODO: connect target in a goroutine
-	// TODO: when target is wss url
-	c, _, err := websocket.DefaultDialer.Dial(targetEndpoint, nil)
-	if err != nil {
-		log.Println("dial:", err)
-		return
-	}
-	utils.Debugf("connected to %s\n", targetEndpoint)
-	session.UpstreamTargetConnection = c
-	session.UpstreamTargetConnectionDone = make(chan struct{})
-	session.UpstreamRpcRequestsChan = make(chan *proxy.JSONRpcRequestBundle, 1000)
-	// watch UpstreamTargetConnection's data
-	go func(middleware *WsUpstreamMiddleware, session *proxy.ConnectionSession) {
-		defer close(session.UpstreamTargetConnectionDone)
-		for {
-			messageType, message, err := c.ReadMessage()
-			if err != nil {
-				_ = middleware.OnTargetWebsocketError(session, err)
-				return
-			}
-			targetNext, err := middleware.OnTargetWebSocketFrame(session, messageType, message)
-			if err != nil {
-				log.Println("upstream target OnTargetWebSocketFrame error: ", err)
-				continue
-			}
-			if !targetNext {
-				break
-			}
-		}
-	}(middleware, session)
-
+// watch UpstreamTargetConnection's data
+func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponse(session *proxy.ConnectionSession) {
 	go func() {
 		for {
 			select {
@@ -117,6 +78,51 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSe
 			}
 		}
 	}()
+}
+
+func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
+	if session.UpstreamTargetConnection != nil {
+		err = errors.New("when OnConnection, session has connected to upstream target before")
+		return
+	}
+	targetEndpoint, err := common.GetSelectedUpstreamTargetEndpoint(session, &middleware.DefaultTargetEndpoint)
+	if err != nil {
+		return
+	}
+
+	session.UpstreamRpcRequestsChan = make(chan *proxy.JSONRpcRequestBundle, 1000)
+
+	go func() {
+		utils.Debugf("connecting to %s\n", targetEndpoint)
+		// TODO: when target is wss url
+		c, _, err := websocket.DefaultDialer.Dial(targetEndpoint, nil)
+		if err != nil {
+			log.Println("dial:", err)
+			return
+		}
+		utils.Debugf("connected to %s\n", targetEndpoint)
+		session.UpstreamTargetConnection = c
+		session.UpstreamTargetConnectionDone = make(chan struct{})
+		defer close(session.UpstreamTargetConnectionDone)
+
+		middleware.watchUpstreamConnectionResponse(session)
+
+		for {
+			messageType, message, err := c.ReadMessage()
+			if err != nil {
+				_ = middleware.OnTargetWebsocketError(session, err)
+				return
+			}
+			targetNext, err := middleware.OnTargetWebSocketFrame(session, messageType, message)
+			if err != nil {
+				log.Println("upstream target OnTargetWebSocketFrame error: ", err)
+				continue
+			}
+			if !targetNext {
+				break
+			}
+		}
+	}()
 
 	next = true
 	return
@@ -129,8 +135,8 @@ func (middleware *WsUpstreamMiddleware) OnConnectionClosed(session *proxy.Connec
 		if err == nil {
 			session.UpstreamTargetConnection = nil
 		}
-		close(session.UpstreamRpcRequestsChan)
 	}
+	close(session.UpstreamRpcRequestsChan)
 	return
 }
 
@@ -203,6 +209,10 @@ func (middleware *WsUpstreamMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcR
 }
 func (middleware *WsUpstreamMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (next bool, err error) {
 	next = true
+	if session.RpcResponseFutureChan != nil {
+		close(session.RpcResponseFutureChan)
+		session.RpcResponseFutureChan = nil
+	}
 	return
 }
 
@@ -218,6 +228,7 @@ func (middleware *WsUpstreamMiddleware) ProcessJSONRpcRequest(session *proxy.JSO
 	}
 	defer func() {
 		close(session.RpcResponseFutureChan)
+		session.RpcResponseFutureChan = nil
 		delete(rpcRequestsMap, rpcRequestId)
 	}()
 	var rpcRes *proxy.JSONRpcResponse
