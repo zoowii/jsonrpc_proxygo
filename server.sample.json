@@ -18,6 +18,9 @@
     ],
     "before_cache_configs": [
       {"method": "call", "fetch_cache_key_from_params_count": 2}
-    ]
+    ],
+    "statistic": {
+      "start": true
+    }
   }
 }

@@ -5,6 +5,7 @@ package utils
  */
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -156,4 +157,66 @@ func (c *MemoryCache) get(k string) (interface{}, bool) {
 		return nil, false
 	}
 	return item.Object, true
+}
+
+// Increment an item of type int, int8, int16, int32, int64, uintptr, uint,
+// uint8, uint32, or uint64, float32 or float64 by n. Returns an error if the
+// item's value is not an integer, if it was not found, or if it is not
+// possible to increment it by n. To retrieve the incremented value, use one
+// of the specialized methods, e.g. IncrementInt64.
+func (c *MemoryCache) Increment(k string, n int64) error {
+	c.mu.Lock()
+	v, found := c.items[k]
+	if !found || v.Expired() {
+		c.mu.Unlock()
+		return fmt.Errorf("Item %s not found", k)
+	}
+	switch v.Object.(type) {
+	case int:
+		v.Object = v.Object.(int) + int(n)
+	case int8:
+		v.Object = v.Object.(int8) + int8(n)
+	case int16:
+		v.Object = v.Object.(int16) + int16(n)
+	case int32:
+		v.Object = v.Object.(int32) + int32(n)
+	case int64:
+		v.Object = v.Object.(int64) + n
+	case uint:
+		v.Object = v.Object.(uint) + uint(n)
+	case uintptr:
+		v.Object = v.Object.(uintptr) + uintptr(n)
+	case uint8:
+		v.Object = v.Object.(uint8) + uint8(n)
+	case uint16:
+		v.Object = v.Object.(uint16) + uint16(n)
+	case uint32:
+		v.Object = v.Object.(uint32) + uint32(n)
+	case uint64:
+		v.Object = v.Object.(uint64) + uint64(n)
+	case float32:
+		v.Object = v.Object.(float32) + float32(n)
+	case float64:
+		v.Object = v.Object.(float64) + float64(n)
+	default:
+		c.mu.Unlock()
+		return fmt.Errorf("The value for %s is not an integer", k)
+	}
+	c.items[k] = v
+	c.mu.Unlock()
+	return nil
+}
+
+// Delete all items from the cache.
+func (c *MemoryCache) Flush() {
+	c.mu.Lock()
+	c.items = map[string]Item{}
+	c.mu.Unlock()
+}
+
+func (c *MemoryCache) DumpItems() (jsonBytes []byte, err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	jsonBytes, err = json.Marshal(c.items)
+	return
 }

@@ -67,6 +67,10 @@ func (middleware *LoadBalanceMiddleware) selectTargetByWeight() *UpstreamItem {
 	return maxWeightItem
 }
 
+func (middleware *LoadBalanceMiddleware) OnStart() (err error) {
+	return
+}
+
 func (middleware *LoadBalanceMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
 	next = true
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -60,18 +61,20 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 		for {
 			select {
 			case <- ctx.Done():
-				break
+				return
 			case <- connSession.ConnectionDone:
-				break
+				return
 			case pack := <- connSession.RequestConnectionWriteChan:
 				if pack == nil {
-					break
+					return
 				}
 				err := c.WriteMessage(pack.MessageType, pack.Message)
 				if err != nil {
 					log.Println("write websocket frame error", err)
-					break
+					return
 				}
+			default:
+				time.Sleep(50 * time.Millisecond)
 			}
 		}
 	}()
@@ -135,6 +138,10 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 			connSession.RequestConnectionWriteChan <- NewWebSocketPack(websocket.TextMessage, resBytes)
 		}()
 	}
+}
+
+func (server *ProxyServer) StartMiddlewares() error {
+	return server.MiddlewareChain.OnStart()
 }
 
 /**

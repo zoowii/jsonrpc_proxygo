@@ -5,6 +5,7 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/config"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/cache"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/load_balancer"
+	"github.com/zoowii/jsonrpc_proxygo/plugins/statistic"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/ws_upstream"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
@@ -107,6 +108,18 @@ func main() {
 		if usingBeforeCacheItemCount > 0 {
 			server.MiddlewareChain.InsertHead(beforeCacheMiddleware)
 		}
+	}
+
+	statisticPluginConf := configInfo.Plugins.Statistic
+	if statisticPluginConf.Start {
+		statisticMiddleware := statistic.NewStatisticMiddleware()
+		server.MiddlewareChain.InsertHead(statisticMiddleware)
+	}
+
+	err = server.StartMiddlewares()
+	if err != nil {
+		log.Panic("start middlewares error", err.Error())
+		return
 	}
 	log.Printf("loaded middlewares are(count %d):\n", len(server.MiddlewareChain.Middlewares))
 	for _, middleware := range server.MiddlewareChain.Middlewares {

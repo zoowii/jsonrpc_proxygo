@@ -33,12 +33,12 @@ func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponseAndToDisp
 		for {
 			select {
 			case <- session.UpstreamTargetConnectionDone:
-				break
+				return
 			case <- session.ConnectionDone:
-				break
+				return
 			case rpcRequestSession := <- session.RpcRequestsToDispatch:
 				if rpcRequestSession == nil {
-					break
+					return
 				}
 				rpcRequest := rpcRequestSession.Request
 				rpcRequestId := rpcRequest.Id
@@ -89,11 +89,17 @@ func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponseAndToDisp
 					log.Println("upstream write message error", err)
 					// TODO: notify server.go to close the origin connection
 					//close(session.ConnectionDone)
-					break
+					return
 				}
+			default:
+				time.Sleep(50 * time.Millisecond)
 			}
 		}
 	}()
+}
+
+func (middleware *WsUpstreamMiddleware) OnStart() (err error) {
+	return
 }
 
 func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
@@ -244,16 +250,16 @@ func (middleware *WsUpstreamMiddleware) ProcessJSONRpcRequest(session *proxy.JSO
 
 	var rpcRes *proxy.JSONRpcResponse
 	select {
+	case <- time.After(middleware.UpstreamTimeout):
+		rpcRes = proxy.NewJSONRpcResponse(rpcRequestId, nil,
+			proxy.NewJSONRpcResponseError(proxy.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR,
+				"upstream target connection closed", nil))
 	case <- session.Conn.UpstreamTargetConnectionDone:
 		rpcRes = proxy.NewJSONRpcResponse(rpcRequestId, nil,
 			proxy.NewJSONRpcResponseError(proxy.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR,
 				"upstream target connection closed", nil))
 	case rpcRes = <- requestChan:
 		// do nothing, just receive rpcRes
-	case <- time.After(middleware.UpstreamTimeout):
-		rpcRes = proxy.NewJSONRpcResponse(rpcRequestId, nil,
-			proxy.NewJSONRpcResponseError(proxy.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR,
-				"upstream target connection closed", nil))
 	}
 	session.Response = rpcRes
 	return

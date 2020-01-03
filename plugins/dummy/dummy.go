@@ -12,6 +12,10 @@ func (middleware *DummyMiddleware) Name() string {
 	return "dummy"
 }
 
+func (middleware *DummyMiddleware) OnStart() (err error) {
+	return
+}
+
 func (middleware *DummyMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
 	next = true
 	return

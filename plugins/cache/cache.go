@@ -47,6 +47,10 @@ func (middleware *CacheMiddleware) Name() string {
 	return "cache"
 }
 
+func (middleware *CacheMiddleware) OnStart() (err error) {
+	return
+}
+
 func (middleware *CacheMiddleware) OnConnection(session *proxy.ConnectionSession) (bool, error) {
 	return true, nil
 }

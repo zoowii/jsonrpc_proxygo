@@ -2,6 +2,7 @@
   <dictionary name="kk">
     <words>
       <w>jsonrpc</w>
+      <w>middlewares</w>
       <w>opentracing</w>
     </words>
   </dictionary>

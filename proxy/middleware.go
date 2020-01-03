@@ -2,6 +2,9 @@ package proxy
 
 type Middleware interface {
 	Name() string
+
+	OnStart() error
+
 	// return (continue bool, err error)
 	OnConnection(session *ConnectionSession) (bool, error)
 	OnConnectionClosed(session *ConnectionSession) (bool, error)
@@ -40,6 +43,16 @@ func (chain *MiddlewareChain) InsertHead(middlewares ...Middleware) *MiddlewareC
 		chain.Middlewares = items
 	}
 	return chain
+}
+
+func (chain *MiddlewareChain) OnStart() (err error) {
+	for _, m := range chain.Middlewares {
+		err = m.OnStart()
+		if err != nil {
+			return
+		}
+	}
+	return
 }
 
 func (chain *MiddlewareChain) OnConnection(session *ConnectionSession) (next bool, err error) {
