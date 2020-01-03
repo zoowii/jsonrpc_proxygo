@@ -9,6 +9,9 @@
       "upstream_endpoints": [
         {
           "url": "ws://127.0.0.1:3000", "weight": 1
+        },
+        {
+          "url": "wss://127.0.0.1:4000", "weight": 2
         }
       ]
     },
