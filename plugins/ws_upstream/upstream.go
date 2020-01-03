@@ -6,9 +6,10 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/plugins/common"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
-	"log"
 	"time"
 )
+
+var log = utils.GetLogger("upstream")
 
 type WsUpstreamMiddleware struct {
 	UpstreamTimeout time.Duration
@@ -108,13 +109,13 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSe
 	session.UpstreamRpcRequestsChan = make(chan *proxy.JSONRpcRequestBundle, 1000)
 
 	go func() {
-		utils.Debugf("connecting to %s\n", targetEndpoint)
+		log.Debugf("connecting to %s\n", targetEndpoint)
 		c, _, err := websocket.DefaultDialer.Dial(targetEndpoint, nil)
 		if err != nil {
 			log.Println("dial:", err)
 			return
 		}
-		utils.Debugf("connected to %s\n", targetEndpoint)
+		log.Debugf("connected to %s\n", targetEndpoint)
 		session.UpstreamTargetConnection = c
 		session.UpstreamTargetConnectionDone = make(chan struct{})
 		defer close(session.UpstreamTargetConnectionDone)

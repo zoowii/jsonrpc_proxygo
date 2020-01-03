@@ -6,6 +6,8 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 )
 
+var log = utils.GetLogger("load_balancer")
+
 var upstreamItemIdGen = 0
 
 type UpstreamItem struct {
@@ -73,7 +75,7 @@ func (middleware *LoadBalanceMiddleware) OnConnection(session *proxy.ConnectionS
 		err = errors.New("can't select one upstream target")
 		return
 	}
-	utils.Debugf("[load-balance]selected upstream target item id#%d endpoint: %s\n",selectedTargetItem.id, selectedTargetItem.TargetEndpoint)
+	log.Debugf("selected upstream target item id#%d endpoint: %s\n",selectedTargetItem.id, selectedTargetItem.TargetEndpoint)
 	session.SelectedUpstreamTarget = &selectedTargetItem.TargetEndpoint
 	return
 }

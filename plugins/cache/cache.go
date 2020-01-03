@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
-	"log"
 	"time"
 )
+
+var log = utils.GetLogger("cache")
 
 type CacheConfigItem struct {
 	MethodName string
@@ -124,7 +125,7 @@ func (middleware *CacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcReques
 	session.RequestBytes = newResBytes
 	session.ResponseSetByCache = true
 	next = false
-	utils.Debugf("[cache] rpc method-for-cache %s hit cache", methodNameForCache)
+	log.Debugf("rpc method-for-cache %s hit cache", methodNameForCache)
 	return
 }
 
@@ -147,7 +148,7 @@ func (middleware *CacheMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcReque
 	next = true
 	if session.ResponseSetByCache {
 		next = false
-		//utils.Debug("[cache] ResponseSetByCache set before")
+		// log.Debug("ResponseSetByCache set before")
 		return
 	}
 	methodNameForCache := middleware.getMethodNameForCache(session)
@@ -165,7 +166,7 @@ func (middleware *CacheMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcReque
 		response: rpcRes,
 		responseBytes: rpcResBytes,
 	}, cacheConfigItem.CacheDuration)
-	utils.Debugf("[cache] rpc method-for-cache %s cached\n", methodNameForCache)
+	log.Debugf("rpc method-for-cache %s cached\n", methodNameForCache)
 	return
 }
 

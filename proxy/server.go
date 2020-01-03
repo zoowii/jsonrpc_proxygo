@@ -3,7 +3,6 @@ package proxy
 import (
 	"context"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -35,6 +34,8 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 }
+
+var log = utils.GetLogger("server")
 
 // TODO: websocket jsonrpc subscribe and unsubscribe
 
@@ -93,7 +94,7 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 			_ = c.Close()
 			return
 		}
-		utils.Debugf("[server]recv: %s\n", message)
+		log.Debugf("recv: %s\n", message)
 		if mt == websocket.BinaryMessage {
 			// binary message should be processed by middlewares, not treated as jsonrpc request
 			continue

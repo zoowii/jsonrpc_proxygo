@@ -7,6 +7,11 @@ import (
 type ServerConfig struct {
 	Endpoint string `json:"endpoint"`
 
+	Log struct {
+		Level string `json:"level,omitempty"` // DEBUG,INFO,WARN,ERROR, INFO is default
+		OutputFile string `json:"output_file,omitempty"`
+	} `json:"log"`
+
 	Plugins struct {
 		// upstream plugin config
 		Upstream struct {

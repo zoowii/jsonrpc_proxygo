@@ -7,13 +7,16 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/plugins/load_balancer"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/ws_upstream"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
+	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"time"
 )
 
 func main() {
+	utils.Init()
+	var log = utils.GetLogger("main")
+
 	configPath := flag.String("config", "server.json", "configuration file path(default server.json)")
 	flag.Parse()
 	configFileBytes, err := ioutil.ReadFile(*configPath)
@@ -27,6 +30,12 @@ func main() {
 		log.Fatalln(err)
 		return
 	}
+
+	utils.SetLogLevel(configInfo.Log.Level)
+	if len(configInfo.Log.OutputFile) > 0 {
+		utils.AddFileOutputToLog(configInfo.Log.OutputFile)
+	}
+
 	addr := configInfo.Endpoint
 	log.Println("to start proxy server on " + addr)
 	server := proxy.NewProxyServer(addr)

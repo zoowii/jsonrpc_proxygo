@@ -1,5 +1,9 @@
 {
   "endpoint": "127.0.0.1:5000",
+  "log": {
+    "level": "INFO",
+    "output_file": "logs/jsonrpc_proxygo.log"
+  },
   "plugins": {
     "upstream": {
       "upstream_endpoints": [

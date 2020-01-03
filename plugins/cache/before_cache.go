@@ -2,12 +2,12 @@ package cache
 
 import (
 	"encoding/json"
+
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
-	"log"
 )
 
 type BeforeCacheConfigItem struct {
-	MethodName string
+	MethodName                   string
 	FetchCacheKeyFromParamsCount int /* eg. when rpc params: [2, "info", "hello"], and FetchCacheKeyFromParamsCount==2, then methodName for cache middleware will be "call$2$\"info\""*/
 }
 
@@ -72,7 +72,7 @@ func (middleware *BeforeCacheMiddleware) findBeforeCacheConfigItem(rpcReq *proxy
 
 func MakeMethodNameForCache(methodName string, paramsArray []interface{}) (result string, err error) {
 	result = methodName
-	for i:=0;i<len(paramsArray);i++ {
+	for i := 0; i < len(paramsArray); i++ {
 		result += "$"
 		argBytes, jsonErr := json.Marshal(paramsArray[i])
 		if jsonErr != nil {
@@ -103,7 +103,8 @@ func (middleware *BeforeCacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpc
 		return
 	}
 	session.MethodNameForCache = &methodNameForCache
-	//utils.Debugf("[before-cache] methodNameForCache %s set\n", methodNameForCache)
+
+	// log.Debugf("[before-cache] methodNameForCache %s set\n", methodNameForCache)
 	return
 }
 func (middleware *BeforeCacheMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (bool, error) {
