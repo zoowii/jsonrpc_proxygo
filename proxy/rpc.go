@@ -2,18 +2,6 @@ package proxy
 
 import "encoding/json"
 
-type JSONRpcRequest struct {
-	Id uint64 `json:"id"`
-	JSONRpc string `json:"jsonrpc,omitempty"`
-	Method string `json:"method"`
-	Params interface{} `json:"params,omitempty"`
-}
-
-type JSONRpcResponseError struct {
-	Code int `json:"code"`
-	Message string `json:"message"`
-	Data interface{} `json:"data"`
-}
 
 const (
 	RPC_INTERNAL_ERROR = 10001
@@ -21,6 +9,28 @@ const (
 	RPC_UPSTREAM_CONNECTION_CLOSED_ERROR = 50001
 	RPC_UPSTREAM_TIMEOUT_ERROR = 50002
 )
+
+type JSONRpcRequest struct {
+	Id uint64 `json:"id"`
+	JSONRpc string `json:"jsonrpc,omitempty"`
+	Method string `json:"method"`
+	Params interface{} `json:"params,omitempty"`
+}
+
+func DecodeJSONRPCRequest(message []byte) (req *JSONRpcRequest, err error) {
+	req = new(JSONRpcRequest)
+	err = json.Unmarshal(message, &req)
+	if err != nil {
+		return
+	}
+	return
+}
+
+type JSONRpcResponseError struct {
+	Code int `json:"code"`
+	Message string `json:"message"`
+	Data interface{} `json:"data"`
+}
 
 func NewJSONRpcResponseError(code int, message string, data interface{}) *JSONRpcResponseError {
 	return &JSONRpcResponseError{
@@ -46,9 +56,17 @@ func NewJSONRpcResponse(id uint64, result interface{}, err *JSONRpcResponseError
 	}
 }
 
-func DecodeJSONRPCRequest(message []byte) (req *JSONRpcRequest, err error) {
-	req = new(JSONRpcRequest)
-	err = json.Unmarshal(message, &req)
+func CloneJSONRpcResponse(source *JSONRpcResponse) (result *JSONRpcResponse, err error) {
+	if source == nil {
+		result = nil
+		return
+	}
+	bytes, err := json.Marshal(source)
+	if err != nil {
+		return
+	}
+	result = new(JSONRpcResponse)
+	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		return
 	}

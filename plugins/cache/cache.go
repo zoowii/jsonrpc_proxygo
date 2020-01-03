@@ -111,7 +111,7 @@ func (middleware *CacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcReques
 		return
 	}
 	// need replace cachedItem's rpc request id
-	newRes, err := utils.CloneJSONRpcResponse(cachedItem.response)
+	newRes, err := proxy.CloneJSONRpcResponse(cachedItem.response)
 	if err != nil {
 		return
 	}

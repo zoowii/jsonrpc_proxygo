@@ -56,11 +56,9 @@ func (chain *MiddlewareChain) OnConnection(session *ConnectionSession) (next boo
 }
 
 func (chain *MiddlewareChain) OnConnectionClosed(session *ConnectionSession) (next bool, err error) {
-	for _, m := range chain.Middlewares {
-		if m == nil {
-			panic("null middleware")
-			continue
-		}
+	// reverse iterate
+	for i := len(chain.Middlewares)-1;i >= 0;i-- {
+		m := chain.Middlewares[i]
 		next, err = m.OnConnectionClosed(session)
 		if err != nil {
 			return
@@ -99,9 +97,10 @@ func (chain *MiddlewareChain) OnJSONRpcRequest(session *JSONRpcRequestSession) (
 	return
 }
 
-// TODO: OnJSONRpcResponse, OnConnectionClosed的调用顺序应该反向，因为没用middleware的单纯的wrap的方式
 func (chain *MiddlewareChain) OnJSONRpcResponse(session *JSONRpcRequestSession) (next bool, err error) {
-	for _, m := range chain.Middlewares {
+	// reverse iterate
+	for i := len(chain.Middlewares)-1;i >= 0;i-- {
+		m := chain.Middlewares[i]
 		next, err = m.OnJSONRpcResponse(session)
 		if err != nil {
 			return

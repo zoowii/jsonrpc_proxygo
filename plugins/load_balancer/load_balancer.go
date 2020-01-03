@@ -1,7 +1,5 @@
 package load_balancer
 
-// TODO
-
 import (
 	"errors"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"

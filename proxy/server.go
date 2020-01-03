@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"log"
 	"net/http"
 
@@ -54,8 +55,6 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	ctx := context.Background()
-	rpcResponseBytesChannel := make(chan []byte, 100000)
-	defer close(rpcResponseBytesChannel)
 	go func() {
 		for {
 			select {
@@ -63,11 +62,11 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 				break
 			case <- connSession.ConnectionDone:
 				break
-			case resBytes := <- rpcResponseBytesChannel:
-				if resBytes == nil {
+			case pack := <- connSession.RequestConnectionWriteChan:
+				if pack == nil {
 					break
 				}
-				err := c.WriteMessage(websocket.TextMessage, resBytes)
+				err := c.WriteMessage(pack.MessageType, pack.Message)
 				if err != nil {
 					log.Println("write websocket frame error", err)
 					break
@@ -94,7 +93,7 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 			_ = c.Close()
 			return
 		}
-		log.Printf("recv: %s", message)
+		utils.Debugf("[server]recv: %s\n", message)
 		if mt == websocket.BinaryMessage {
 			// binary message should be processed by middlewares, not treated as jsonrpc request
 			continue
@@ -132,7 +131,7 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 				log.Println("encodeJSONRPCResponse err", err)
 				return
 			}
-			rpcResponseBytesChannel <- resBytes
+			connSession.RequestConnectionWriteChan <- NewWebSocketPack(websocket.TextMessage, resBytes)
 		}()
 	}
 }

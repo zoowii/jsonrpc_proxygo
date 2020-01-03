@@ -27,7 +27,7 @@ func (middleware *WsUpstreamMiddleware) Name() string {
 }
 
 // watch UpstreamTargetConnection's data
-func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponse(session *proxy.ConnectionSession) {
+func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponseAndToDispatchRpcRequests(session *proxy.ConnectionSession) {
 	go func() {
 		for {
 			select {
@@ -35,6 +35,28 @@ func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponse(session 
 				break
 			case <- session.ConnectionDone:
 				break
+			case rpcRequestSession := <- session.RpcRequestsToDispatch:
+				if rpcRequestSession == nil {
+					break
+				}
+				rpcRequest := rpcRequestSession.Request
+				rpcRequestId := rpcRequest.Id
+				newChan := rpcRequestSession.RpcResponseFutureChan
+				if old, ok := session.RpcRequestsMap[rpcRequestId]; ok {
+					close(old)
+				}
+				session.RpcRequestsMap[rpcRequestId] = newChan
+			case rpcRequestSession := <- session.RpcResponsesFromDispatchResult:
+				if rpcRequestSession == nil {
+					break
+				}
+				rpcRequest := rpcRequestSession.Request
+				rpcRequestId := rpcRequest.Id
+				rpcRequestSession.RpcResponseFutureChan = nil
+				if resChan, ok := session.RpcRequestsMap[rpcRequestId]; ok {
+					close(resChan)
+					delete(session.RpcRequestsMap, rpcRequestId)
+				}
 			case req := <- session.UpstreamRpcRequestsChan:
 				if req == nil {
 					return
@@ -61,13 +83,6 @@ func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponse(session 
 					log.Printf("null upstream channel request of message type %d\n", messageType)
 					continue
 				}
-				rpcRequestId := rpcRequest.Id
-
-				newChan := req.ResponseFutureChan
-				if old, ok := session.RpcRequestsMap[rpcRequestId]; ok {
-					close(old)
-				}
-				session.RpcRequestsMap[rpcRequestId] = newChan
 				err := targetConn.WriteMessage(websocket.TextMessage, rpcRequestBytes)
 				if err != nil {
 					log.Println("upstream write message error", err)
@@ -94,7 +109,6 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSe
 
 	go func() {
 		utils.Debugf("connecting to %s\n", targetEndpoint)
-		// TODO: when target is wss url
 		c, _, err := websocket.DefaultDialer.Dial(targetEndpoint, nil)
 		if err != nil {
 			log.Println("dial:", err)
@@ -105,7 +119,7 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSe
 		session.UpstreamTargetConnectionDone = make(chan struct{})
 		defer close(session.UpstreamTargetConnectionDone)
 
-		middleware.watchUpstreamConnectionResponse(session)
+		middleware.watchUpstreamConnectionResponseAndToDispatchRpcRequests(session)
 
 		for {
 			messageType, message, err := c.ReadMessage()
@@ -143,16 +157,16 @@ func (middleware *WsUpstreamMiddleware) OnConnectionClosed(session *proxy.Connec
 func (middleware *WsUpstreamMiddleware) OnTargetWebSocketFrame(session *proxy.ConnectionSession,
 	messageType int, message []byte) (next bool, err error) {
 	next = true
-	requestConn := session.RequestConnection
+	requestConnWriteChan := session.RequestConnectionWriteChan
 	var rpcRes *proxy.JSONRpcResponse
 	switch messageType {
 	case websocket.CloseMessage:
 		next = false
-		err = requestConn.WriteMessage(messageType, message) // TODO: send msg to channel to let main goroutine to process socket write
+		requestConnWriteChan <- proxy.NewWebSocketPack(messageType, message)
 	case websocket.PingMessage:
-		err = requestConn.WriteMessage(messageType, message)
+		requestConnWriteChan <- proxy.NewWebSocketPack(messageType, message)
 	case websocket.PongMessage:
-		err = requestConn.WriteMessage(messageType, message)
+		requestConnWriteChan <- proxy.NewWebSocketPack(messageType, message)
 	case websocket.TextMessage:
 		// process target rpc response
 		rpcRes, err = proxy.DecodeJSONRPCResponse(message)
@@ -203,16 +217,17 @@ func (middleware *WsUpstreamMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcR
 
 	// create response future before to use in ProcessJSONRpcRequest
 	session.RpcResponseFutureChan = make(chan *proxy.JSONRpcResponse)
+	connSession.RpcRequestsToDispatch <- session
 
 	middleware.sendRequestToTargetConn(connSession, websocket.TextMessage, rpcRequestBytes, rpcRequest, session.RpcResponseFutureChan)
 	return
 }
 func (middleware *WsUpstreamMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (next bool, err error) {
 	next = true
-	if session.RpcResponseFutureChan != nil {
-		close(session.RpcResponseFutureChan)
-		session.RpcResponseFutureChan = nil
-	}
+	connSession := session.Conn
+	defer func() {
+		connSession.RpcResponsesFromDispatchResult <- session // notify connSession this rpc response is end
+	}()
 	return
 }
 
@@ -220,17 +235,12 @@ func (middleware *WsUpstreamMiddleware) ProcessJSONRpcRequest(session *proxy.JSO
 	next = true
 	rpcRequest := session.Request
 	rpcRequestId := rpcRequest.Id
-	rpcRequestsMap := session.Conn.RpcRequestsMap
 	requestChan := session.RpcResponseFutureChan
 	if requestChan == nil {
 		err = errors.New("can't find rpc request channel to process")
 		return
 	}
-	defer func() {
-		close(session.RpcResponseFutureChan)
-		session.RpcResponseFutureChan = nil
-		delete(rpcRequestsMap, rpcRequestId)
-	}()
+
 	var rpcRes *proxy.JSONRpcResponse
 	select {
 	case <- session.Conn.UpstreamTargetConnectionDone:
@@ -238,7 +248,7 @@ func (middleware *WsUpstreamMiddleware) ProcessJSONRpcRequest(session *proxy.JSO
 			proxy.NewJSONRpcResponseError(proxy.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR,
 				"upstream target connection closed", nil))
 	case rpcRes = <- requestChan:
-
+		// do nothing, just receive rpcRes
 	case <- time.After(middleware.UpstreamTimeout):
 		rpcRes = proxy.NewJSONRpcResponse(rpcRequestId, nil,
 			proxy.NewJSONRpcResponseError(proxy.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR,
