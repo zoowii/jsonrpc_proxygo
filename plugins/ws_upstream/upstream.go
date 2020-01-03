@@ -66,6 +66,9 @@ func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponseAndToDisp
 				rpcRequest := req.Request
 				rpcRequestBytes := req.Data
 				targetConn := session.UpstreamTargetConnection
+				if targetConn == nil {
+					return
+				}
 				switch messageType {
 				case websocket.PingMessage:
 					_ = targetConn.WriteMessage(messageType, rpcRequestBytes)
@@ -240,6 +243,9 @@ func (middleware *WsUpstreamMiddleware) OnJSONRpcResponse(session *proxy.JSONRpc
 
 func (middleware *WsUpstreamMiddleware) ProcessJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
 	next = true
+	if session.Response != nil {
+		return
+	}
 	rpcRequest := session.Request
 	rpcRequestId := rpcRequest.Id
 	requestChan := session.RpcResponseFutureChan

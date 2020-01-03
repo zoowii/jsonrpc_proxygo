@@ -36,6 +36,11 @@ type ServerConfig struct {
 		Statistic struct {
 			Start bool `json:"start,omitempty"`
 		} `json:"statistic,omitempty"`
+
+		Disable struct {
+			Start bool `json:"start,omitempty"`
+			DisabledRpcMethods []string `json:"disabled_rpc_methods"`
+		} `json:"disable,omitempty"`
 	} `json:"plugins,omitempty"`
 }
 

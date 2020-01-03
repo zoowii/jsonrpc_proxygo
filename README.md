@@ -53,6 +53,12 @@ go build
     ],
     "statistic": {
       "start": true
+    },
+    "disable": {
+      "start": true,
+      "disabled_rpc_methods": [
+        "stop"
+      ]
     }
   }
 }

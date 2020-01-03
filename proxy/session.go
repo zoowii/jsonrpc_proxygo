@@ -104,3 +104,7 @@ func NewJSONRpcRequestSession(conn *ConnectionSession) *JSONRpcRequestSession {
 		ResponseSetByCache: false,
 	}
 }
+
+func (requestSession *JSONRpcRequestSession) FillRpcResponse(response *JSONRpcResponse) {
+	requestSession.Response = response
+}

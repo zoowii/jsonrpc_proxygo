@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/zoowii/jsonrpc_proxygo/config"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/cache"
+	"github.com/zoowii/jsonrpc_proxygo/plugins/disable"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/load_balancer"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/statistic"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/ws_upstream"
@@ -66,6 +67,16 @@ func main() {
 		}
 		server.MiddlewareChain.InsertHead(loadBalanceMiddleware)
 	}
+
+	disablePluginConf := configInfo.Plugins.Disable
+	if disablePluginConf.Start && len(disablePluginConf.DisabledRpcMethods) > 0 {
+		disableMiddleware := disable.NewDisableMiddleware()
+		for _, item := range disablePluginConf.DisabledRpcMethods {
+			disableMiddleware.AddRpcMethodToBlacklist(item)
+		}
+		server.MiddlewareChain.InsertHead(disableMiddleware)
+	}
+
 	cachePluginConf := configInfo.Plugins.Caches
 	if len(cachePluginConf) > 0 {
 		cacheMiddleware := cache.NewCacheMiddleware()
