@@ -17,7 +17,7 @@ type CacheConfigItem struct {
 
 type CacheMiddleware struct {
 	cacheConfigItems []*CacheConfigItem
-	cacheConfigItemsMap map[string]*CacheConfigItem // methodName => *CacheConfigItem
+	cacheConfigItemsMap map[string]*CacheConfigItem // methodNameForCache => *CacheConfigItem
 
 	rpcCache *utils.MemoryCache
 }

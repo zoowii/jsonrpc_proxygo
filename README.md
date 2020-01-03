@@ -64,7 +64,7 @@ go build
 ```
 ./jsonrpc_proxygo -config server.json
 
-# sample output maybe like:
+# sample output maybe looks like:
 {"level":"info","module":"main","msg":"to start proxy server on 127.0.0.1:5000","time":""}
 {"level":"info","module":"main","msg":"loaded middlewares are(count 5):\n","time":""}
 {"level":"info","module":"main","msg":"\t- middleware statistic\n","time":""}
