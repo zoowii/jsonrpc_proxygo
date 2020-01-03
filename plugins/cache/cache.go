@@ -151,7 +151,7 @@ type rpcResponseCacheItem struct {
 func (middleware *CacheMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (next bool, err error) {
 	next = true
 	if session.ResponseSetByCache {
-		return
+		return // can't update cache time by cached response
 	}
 	methodNameForCache := middleware.getMethodNameForCache(session)
 	cacheConfigItem, ok := middleware.getCacheConfigItem(session)

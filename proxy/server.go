@@ -81,7 +81,9 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			log.Println("read:", err)
+			if !utils.IsClosedOrGoingAwayCloseError(err) {
+				log.Println("read from source connection error:", err)
+			}
 			break
 		}
 

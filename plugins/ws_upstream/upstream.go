@@ -1,6 +1,7 @@
 package ws_upstream
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/common"
@@ -24,7 +25,7 @@ func NewWsUpstreamMiddleware(defaultTargetEndpoint string) *WsUpstreamMiddleware
 }
 
 func (middleware *WsUpstreamMiddleware) Name() string {
-	return "upstream"
+	return "ws-upstream"
 }
 
 // watch UpstreamTargetConnection's data
@@ -196,6 +197,12 @@ func (middleware *WsUpstreamMiddleware) OnTargetWebSocketFrame(session *proxy.Co
 }
 
 func (middleware *WsUpstreamMiddleware) OnTargetWebsocketError(session *proxy.ConnectionSession, err error) error {
+	if utils.IsClosedOrGoingAwayCloseError(err) {
+		return nil
+	}
+	if err == nil {
+		return nil
+	}
 	log.Println("upstream target websocket error:", err)
 	return nil
 }
@@ -238,6 +245,10 @@ func (middleware *WsUpstreamMiddleware) OnJSONRpcResponse(session *proxy.JSONRpc
 	defer func() {
 		connSession.RpcResponsesFromDispatchResult <- session // notify connSession this rpc response is end
 	}()
+	responseBytes, jsonErr := json.Marshal(session.Response)
+	if jsonErr == nil {
+		log.Debugf("upstream response: %s", string(responseBytes))
+	}
 	return
 }
 
