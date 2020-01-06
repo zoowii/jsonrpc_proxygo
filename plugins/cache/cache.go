@@ -3,7 +3,8 @@ package cache
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zoowii/jsonrpc_proxygo/proxy"
+	"github.com/zoowii/jsonrpc_proxygo/plugin"
+	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"time"
 )
@@ -16,7 +17,7 @@ type CacheConfigItem struct {
 }
 
 type CacheMiddleware struct {
-	proxy.MiddlewareAdapter
+	plugin.MiddlewareAdapter
 	cacheConfigItems []*CacheConfigItem
 	cacheConfigItemsMap map[string]*CacheConfigItem // methodNameForCache => *CacheConfigItem
 
@@ -52,20 +53,20 @@ func (middleware *CacheMiddleware) OnStart() (err error) {
 	return middleware.NextOnStart()
 }
 
-func (middleware *CacheMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
+func (middleware *CacheMiddleware) OnConnection(session *rpc.ConnectionSession) (err error) {
 	return middleware.NextOnConnection(session)
 }
 
-func (middleware *CacheMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+func (middleware *CacheMiddleware) OnConnectionClosed(session *rpc.ConnectionSession) (err error) {
 	return middleware.NextOnConnectionClosed(session)
 }
 
-func (middleware *CacheMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
+func (middleware *CacheMiddleware) OnWebSocketFrame(session *rpc.JSONRpcRequestSession,
 	messageType int, message []byte) (error) {
 	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
 
-func fetchRpcRequestParams(rpcRequest *proxy.JSONRpcRequest, fetchParamsCount int) (result []interface{}) {
+func fetchRpcRequestParams(rpcRequest *rpc.JSONRpcRequest, fetchParamsCount int) (result []interface{}) {
 	if fetchParamsCount < 1 || rpcRequest.Params == nil {
 		return
 	}
@@ -83,20 +84,20 @@ func fetchRpcRequestParams(rpcRequest *proxy.JSONRpcRequest, fetchParamsCount in
 	return
 }
 
-func (middleware *CacheMiddleware) getCacheConfigItem(session *proxy.JSONRpcRequestSession) (result *CacheConfigItem, ok bool) {
+func (middleware *CacheMiddleware) getCacheConfigItem(session *rpc.JSONRpcRequestSession) (result *CacheConfigItem, ok bool) {
 	methodNameForCache := middleware.getMethodNameForCache(session)
 	result, ok = middleware.cacheConfigItemsMap[methodNameForCache]
 	return
 }
 
-func (middleware *CacheMiddleware) getMethodNameForCache(session *proxy.JSONRpcRequestSession) string {
+func (middleware *CacheMiddleware) getMethodNameForCache(session *rpc.JSONRpcRequestSession) string {
 	if session.MethodNameForCache != nil {
 		return *session.MethodNameForCache
 	}
 	return session.Request.Method
 }
 
-func (middleware *CacheMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *CacheMiddleware) OnRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	next := true
 	defer func() {
 		if next {
@@ -122,7 +123,7 @@ func (middleware *CacheMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSes
 		return
 	}
 	// need replace cachedItem's rpc request id
-	newRes, err := proxy.CloneJSONRpcResponse(cachedItem.response)
+	newRes, err := rpc.CloneJSONRpcResponse(cachedItem.response)
 	if err != nil {
 		return
 	}
@@ -150,11 +151,11 @@ func (middleware *CacheMiddleware) cacheKeyForRpcMethod(rpcMethodName string, rp
 }
 
 type rpcResponseCacheItem struct {
-	response *proxy.JSONRpcResponse
+	response *rpc.JSONRpcResponse
 	responseBytes []byte
 }
 
-func (middleware *CacheMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *CacheMiddleware) OnRpcResponse(session *rpc.JSONRpcRequestSession) (err error) {
 	if session.ResponseSetByCache {
 		return // can't update cache time by cached response
 	}
@@ -179,7 +180,7 @@ func (middleware *CacheMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSe
 	return
 }
 
-func (middleware *CacheMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *CacheMiddleware) ProcessRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	if session.ResponseSetByCache {
 		return
 	}

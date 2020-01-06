@@ -1,5 +1,6 @@
-package proxy
+package plugin
 
+import "github.com/zoowii/jsonrpc_proxygo/rpc"
 
 type MiddlewareChain struct {
 	Middlewares []Middleware
@@ -52,7 +53,7 @@ func (chain *MiddlewareChain) First() Middleware {
 	}
 }
 
-func (chain *MiddlewareChain) OnConnection(session *ConnectionSession) (err error) {
+func (chain *MiddlewareChain) OnConnection(session *rpc.ConnectionSession) (err error) {
 	first := chain.First()
 	if first == nil {
 		return nil
@@ -61,7 +62,7 @@ func (chain *MiddlewareChain) OnConnection(session *ConnectionSession) (err erro
 	}
 }
 
-func (chain *MiddlewareChain) OnConnectionClosed(session *ConnectionSession) (err error) {
+func (chain *MiddlewareChain) OnConnectionClosed(session *rpc.ConnectionSession) (err error) {
 	first := chain.First()
 	if first == nil {
 		return nil
@@ -70,7 +71,7 @@ func (chain *MiddlewareChain) OnConnectionClosed(session *ConnectionSession) (er
 	}
 }
 
-func (chain *MiddlewareChain) OnWebSocketFrame(session *JSONRpcRequestSession,
+func (chain *MiddlewareChain) OnWebSocketFrame(session *rpc.JSONRpcRequestSession,
 	messageType int, message []byte) (err error) {
 	first := chain.First()
 	if first == nil {
@@ -80,7 +81,7 @@ func (chain *MiddlewareChain) OnWebSocketFrame(session *JSONRpcRequestSession,
 	}
 }
 
-func (chain *MiddlewareChain) OnJSONRpcRequest(session *JSONRpcRequestSession) (err error) {
+func (chain *MiddlewareChain) OnJSONRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	first := chain.First()
 	if first == nil {
 		return nil
@@ -89,7 +90,7 @@ func (chain *MiddlewareChain) OnJSONRpcRequest(session *JSONRpcRequestSession) (
 	}
 }
 
-func (chain *MiddlewareChain) OnJSONRpcResponse(session *JSONRpcRequestSession) (err error) {
+func (chain *MiddlewareChain) OnJSONRpcResponse(session *rpc.JSONRpcRequestSession) (err error) {
 	first := chain.First()
 	if first == nil {
 		return nil
@@ -98,7 +99,7 @@ func (chain *MiddlewareChain) OnJSONRpcResponse(session *JSONRpcRequestSession) 
 	}
 }
 
-func (chain *MiddlewareChain) ProcessJSONRpcRequest(session *JSONRpcRequestSession) (err error) {
+func (chain *MiddlewareChain) ProcessJSONRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	first := chain.First()
 	if first == nil {
 		return nil

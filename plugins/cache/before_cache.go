@@ -2,8 +2,8 @@ package cache
 
 import (
 	"encoding/json"
-
-	"github.com/zoowii/jsonrpc_proxygo/proxy"
+	"github.com/zoowii/jsonrpc_proxygo/plugin"
+	"github.com/zoowii/jsonrpc_proxygo/rpc"
 )
 
 type BeforeCacheConfigItem struct {
@@ -16,7 +16,7 @@ type BeforeCacheConfigItem struct {
  * eg. when rpc format is {method: "callOrOther", params: ["realMethodName", ...otherArgs]} for some methods
  */
 type BeforeCacheMiddleware struct {
-	proxy.MiddlewareAdapter
+	plugin.MiddlewareAdapter
 	BeforeCacheConfigItems []*BeforeCacheConfigItem
 }
 
@@ -41,20 +41,20 @@ func (middleware *BeforeCacheMiddleware) OnStart() (err error) {
 	return
 }
 
-func (middleware *BeforeCacheMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
+func (middleware *BeforeCacheMiddleware) OnConnection(session *rpc.ConnectionSession) (err error) {
 	return middleware.NextOnConnection(session)
 }
 
-func (middleware *BeforeCacheMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+func (middleware *BeforeCacheMiddleware) OnConnectionClosed(session *rpc.ConnectionSession) (err error) {
 	return middleware.NextOnConnectionClosed(session)
 }
 
-func (middleware *BeforeCacheMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
+func (middleware *BeforeCacheMiddleware) OnWebSocketFrame(session *rpc.JSONRpcRequestSession,
 	messageType int, message []byte) (error) {
 	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
 
-func (middleware *BeforeCacheMiddleware) findBeforeCacheConfigItem(rpcReq *proxy.JSONRpcRequest) (result *BeforeCacheConfigItem, ok bool) {
+func (middleware *BeforeCacheMiddleware) findBeforeCacheConfigItem(rpcReq *rpc.JSONRpcRequest) (result *BeforeCacheConfigItem, ok bool) {
 	methodName := rpcReq.Method
 	rpcParams := rpcReq.Params
 	rpcParamsArray, parseArrayOk := rpcParams.([]interface{})
@@ -89,7 +89,7 @@ func MakeMethodNameForCache(methodName string, paramsArray []interface{}) (resul
 	return
 }
 
-func (middleware *BeforeCacheMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *BeforeCacheMiddleware) OnRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	defer func() {
 		if err == nil {
 			err = middleware.NextOnJSONRpcRequest(session)
@@ -116,10 +116,10 @@ func (middleware *BeforeCacheMiddleware) OnRpcRequest(session *proxy.JSONRpcRequ
 	// log.Debugf("[before-cache] methodNameForCache %s set\n", methodNameForCache)
 	return
 }
-func (middleware *BeforeCacheMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (error) {
+func (middleware *BeforeCacheMiddleware) OnRpcResponse(session *rpc.JSONRpcRequestSession) (error) {
 	return middleware.NextOnJSONRpcResponse(session)
 }
 
-func (middleware *BeforeCacheMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (error) {
+func (middleware *BeforeCacheMiddleware) ProcessRpcRequest(session *rpc.JSONRpcRequestSession) (error) {
 	return middleware.NextProcessJSONRpcRequest(session)
 }

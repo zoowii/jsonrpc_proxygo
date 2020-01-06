@@ -1,3 +1,5 @@
+github.com/VividCortex/godaemon v0.0.0-20150910212227-3d9f6e0b234f h1:CGNNnJTXn6efEPOEHlxqRrvg9AP0Hsumy9vbXk8aU/k=
+github.com/VividCortex/godaemon v0.0.0-20150910212227-3d9f6e0b234f/go.mod h1:Y8CJ3IwPIAkMhv/rRUWIlczaeqd9ty9yrl+nc2AbaL4=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/golang/mock v1.3.1 h1:qGJ6qTW+x6xX/my+8YUVl4WNpX9B7+/l2tRsHGZ7f2s=

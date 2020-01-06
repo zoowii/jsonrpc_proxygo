@@ -1,5 +1,6 @@
-package proxy
+package plugin
 
+import "github.com/zoowii/jsonrpc_proxygo/rpc"
 
 type MiddlewareAdapter struct {
 	nextMiddleware Middleware
@@ -22,7 +23,7 @@ func (middleware *MiddlewareAdapter) NextOnStart() (err error) {
 	return
 }
 
-func (middleware *MiddlewareAdapter) NextOnConnection(session *ConnectionSession) (err error) {
+func (middleware *MiddlewareAdapter) NextOnConnection(session *rpc.ConnectionSession) (err error) {
 	next := middleware.NextMiddleware()
 	if next != nil {
 		err = next.OnConnection(session)
@@ -30,7 +31,7 @@ func (middleware *MiddlewareAdapter) NextOnConnection(session *ConnectionSession
 	return
 }
 
-func (middleware *MiddlewareAdapter) NextOnConnectionClosed(session *ConnectionSession) (err error) {
+func (middleware *MiddlewareAdapter) NextOnConnectionClosed(session *rpc.ConnectionSession) (err error) {
 	next := middleware.NextMiddleware()
 	if next != nil {
 		err = next.OnConnectionClosed(session)
@@ -38,7 +39,7 @@ func (middleware *MiddlewareAdapter) NextOnConnectionClosed(session *ConnectionS
 	return
 }
 
-func (middleware *MiddlewareAdapter) NextOnWebSocketFrame(session *JSONRpcRequestSession,
+func (middleware *MiddlewareAdapter) NextOnWebSocketFrame(session *rpc.JSONRpcRequestSession,
 	messageType int, message []byte) (err error) {
 	next := middleware.NextMiddleware()
 	if next != nil {
@@ -46,14 +47,14 @@ func (middleware *MiddlewareAdapter) NextOnWebSocketFrame(session *JSONRpcReques
 	}
 	return
 }
-func (middleware *MiddlewareAdapter) NextOnJSONRpcRequest(session *JSONRpcRequestSession) (err error) {
+func (middleware *MiddlewareAdapter) NextOnJSONRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	next := middleware.NextMiddleware()
 	if next != nil {
 		err = next.OnRpcRequest(session)
 	}
 	return
 }
-func (middleware *MiddlewareAdapter) NextOnJSONRpcResponse(session *JSONRpcRequestSession) (err error) {
+func (middleware *MiddlewareAdapter) NextOnJSONRpcResponse(session *rpc.JSONRpcRequestSession) (err error) {
 	next := middleware.NextMiddleware()
 	if next != nil {
 		err = next.OnRpcResponse(session)
@@ -61,7 +62,7 @@ func (middleware *MiddlewareAdapter) NextOnJSONRpcResponse(session *JSONRpcReque
 	return
 }
 
-func (middleware *MiddlewareAdapter) NextProcessJSONRpcRequest(session *JSONRpcRequestSession) (err error) {
+func (middleware *MiddlewareAdapter) NextProcessJSONRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	next := middleware.NextMiddleware()
 	if next != nil {
 		err = next.ProcessRpcRequest(session)

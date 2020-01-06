@@ -2,12 +2,13 @@ package rate_limit
 
 import (
 	"errors"
-	"github.com/zoowii/jsonrpc_proxygo/proxy"
+	"github.com/zoowii/jsonrpc_proxygo/plugin"
+	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"time"
 )
 
 type RateLimiterMiddleware struct {
-	proxy.MiddlewareAdapter
+	plugin.MiddlewareAdapter
 	connLimiter Limiter
 }
 
@@ -28,7 +29,7 @@ func (middleware *RateLimiterMiddleware) OnStart() (err error) {
 	return middleware.NextOnStart()
 }
 
-func (middleware *RateLimiterMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
+func (middleware *RateLimiterMiddleware) OnConnection(session *rpc.ConnectionSession) (err error) {
 	taken := middleware.connLimiter.Take()
 	if !taken {
 		err = errors.New("rate limit exceed")
@@ -37,21 +38,21 @@ func (middleware *RateLimiterMiddleware) OnConnection(session *proxy.ConnectionS
 	return middleware.NextOnConnection(session)
 }
 
-func (middleware *RateLimiterMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+func (middleware *RateLimiterMiddleware) OnConnectionClosed(session *rpc.ConnectionSession) (err error) {
 	return middleware.NextOnConnectionClosed(session)
 }
 
-func (middleware *RateLimiterMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
+func (middleware *RateLimiterMiddleware) OnWebSocketFrame(session *rpc.JSONRpcRequestSession,
 	messageType int, message []byte) (err error) {
 	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
-func (middleware *RateLimiterMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *RateLimiterMiddleware) OnRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	return middleware.NextOnJSONRpcRequest(session)
 }
-func (middleware *RateLimiterMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *RateLimiterMiddleware) OnRpcResponse(session *rpc.JSONRpcRequestSession) (err error) {
 	return middleware.NextOnJSONRpcResponse(session)
 }
 
-func (middleware *RateLimiterMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *RateLimiterMiddleware) ProcessRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	return middleware.NextProcessJSONRpcRequest(session)
 }

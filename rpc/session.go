@@ -1,4 +1,4 @@
-package proxy
+package rpc
 
 import (
 	"github.com/gorilla/websocket"

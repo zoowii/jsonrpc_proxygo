@@ -2,6 +2,8 @@ package proxy
 
 import (
 	"context"
+	"github.com/zoowii/jsonrpc_proxygo/plugin"
+	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"net/http"
 	"time"
@@ -15,7 +17,7 @@ import (
 type ProxyServer struct {
 	Addr string
 	WebSocketPath string // default "/"
-	MiddlewareChain *MiddlewareChain
+	MiddlewareChain *plugin.MiddlewareChain
 }
 
 /**
@@ -25,7 +27,7 @@ func NewProxyServer(addr string) *ProxyServer {
 	server := &ProxyServer{
 		Addr: addr,
 		WebSocketPath: "/",
-		MiddlewareChain: NewMiddlewareChain(),
+		MiddlewareChain: plugin.NewMiddlewareChain(),
 	}
 	return server
 }
@@ -47,7 +49,7 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	defer c.Close()
-	connSession := NewConnectionSession(w, r, c)
+	connSession := rpc.NewConnectionSession(w, r, c)
 	defer connSession.Close()
 	defer server.MiddlewareChain.OnConnectionClosed(connSession)
 	// must ensure middleware chain not change after calling OnConnection,
@@ -70,7 +72,7 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 				}
 				rpcRequestSession := rpcDispatch.Data
 				switch rpcDispatch.Type {
-				case RPC_REQUEST_CHANGE_TYPE_ADD_REQUEST:
+				case rpc.RPC_REQUEST_CHANGE_TYPE_ADD_REQUEST:
 					rpcRequest := rpcRequestSession.Request
 					rpcRequestId := rpcRequest.Id
 					newChan := rpcRequestSession.RpcResponseFutureChan
@@ -78,7 +80,7 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 						close(old)
 					}
 					connSession.RpcRequestsMap[rpcRequestId] = newChan
-				case RPC_REQUEST_CHANGE_TYPE_ADD_RESPONSE:
+				case rpc.RPC_REQUEST_CHANGE_TYPE_ADD_RESPONSE:
 					rpcRequest := rpcRequestSession.Request
 					rpcRequestId := rpcRequest.Id
 					rpcRequestSession.RpcResponseFutureChan = nil
@@ -110,7 +112,7 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 			break
 		}
 
-		rpcSession := NewJSONRpcRequestSession(connSession)
+		rpcSession := rpc.NewJSONRpcRequestSession(connSession)
 
 		err = server.MiddlewareChain.OnWebSocketFrame(rpcSession, mt, message)
 		if err != nil {
@@ -127,7 +129,7 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 			// binary message should be processed by middlewares, not treated as jsonrpc request
 			continue
 		}
-		rpcReq, err := DecodeJSONRPCRequest(message)
+		rpcReq, err := rpc.DecodeJSONRPCRequest(message)
 		if err != nil {
 			log.Warn("jsonrpc request error", err)
 			continue
@@ -155,12 +157,12 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 				log.Warn("OnRpcResponse error", err)
 				return
 			}
-			resBytes, err := EncodeJSONRPCResponse(rpcRes)
+			resBytes, err := rpc.EncodeJSONRPCResponse(rpcRes)
 			if err != nil {
 				log.Error("encodeJSONRPCResponse err", err)
 				return
 			}
-			connSession.RequestConnectionWriteChan <- NewWebSocketPack(websocket.TextMessage, resBytes)
+			connSession.RequestConnectionWriteChan <- rpc.NewWebSocketPack(websocket.TextMessage, resBytes)
 		}()
 	}
 }

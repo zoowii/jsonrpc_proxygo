@@ -8,7 +8,8 @@ package statistic
 
 import (
 	"context"
-	"github.com/zoowii/jsonrpc_proxygo/proxy"
+	"github.com/zoowii/jsonrpc_proxygo/plugin"
+	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"sync"
 	"time"
@@ -17,9 +18,9 @@ import (
 var log = utils.GetLogger("statistic")
 
 type StatisticMiddleware struct {
-	proxy.MiddlewareAdapter
-	rpcRequestsReceived chan *proxy.JSONRpcRequestSession
-	rpcResponsesReceived chan *proxy.JSONRpcRequestSession
+	plugin.MiddlewareAdapter
+	rpcRequestsReceived chan *rpc.JSONRpcRequestSession
+	rpcResponsesReceived chan *rpc.JSONRpcRequestSession
 
 	globalRpcMethodsCount *utils.MemoryCache
 
@@ -32,8 +33,8 @@ func NewStatisticMiddleware() *StatisticMiddleware {
 	const maxRpcChannelSize = 10000
 
 	return &StatisticMiddleware{
-		rpcRequestsReceived: make(chan *proxy.JSONRpcRequestSession, maxRpcChannelSize),
-		rpcResponsesReceived: make(chan *proxy.JSONRpcRequestSession, maxRpcChannelSize),
+		rpcRequestsReceived: make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
+		rpcResponsesReceived: make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
 		globalRpcMethodsCount: utils.NewMemoryCache(),
 		hourlyStartTime: time.Now(),
 		hourlyRpcMethodsCount: utils.NewMemoryCache(),
@@ -44,7 +45,7 @@ func (middleware *StatisticMiddleware) Name() string {
 	return "statistic"
 }
 
-func getMethodNameForRpcStatistic(session *proxy.JSONRpcRequestSession) string {
+func getMethodNameForRpcStatistic(session *rpc.JSONRpcRequestSession) string {
 	if session.MethodNameForCache != nil {
 		return *session.MethodNameForCache // cache name is more acurrate for statistic
 	}
@@ -116,28 +117,28 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 	return middleware.NextOnStart()
 }
 
-func (middleware *StatisticMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
+func (middleware *StatisticMiddleware) OnConnection(session *rpc.ConnectionSession) (err error) {
 	return middleware.NextOnConnection(session)
 }
 
-func (middleware *StatisticMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+func (middleware *StatisticMiddleware) OnConnectionClosed(session *rpc.ConnectionSession) (err error) {
 	return middleware.NextOnConnectionClosed(session)
 }
 
-func (middleware *StatisticMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
+func (middleware *StatisticMiddleware) OnWebSocketFrame(session *rpc.JSONRpcRequestSession,
 	messageType int, message []byte) (err error) {
 	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
-func (middleware *StatisticMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *StatisticMiddleware) OnRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	middleware.rpcRequestsReceived <- session
 	return middleware.NextOnJSONRpcRequest(session)
 }
-func (middleware *StatisticMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *StatisticMiddleware) OnRpcResponse(session *rpc.JSONRpcRequestSession) (err error) {
 	err = middleware.NextOnJSONRpcResponse(session)
 	middleware.rpcResponsesReceived <- session
 	return
 }
 
-func (middleware *StatisticMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+func (middleware *StatisticMiddleware) ProcessRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
 	return middleware.NextProcessJSONRpcRequest(session)
 }
