@@ -6,6 +6,7 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/plugins/cache"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/disable"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/load_balancer"
+	"github.com/zoowii/jsonrpc_proxygo/plugins/rate_limit"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/statistic"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/ws_upstream"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
@@ -119,6 +120,12 @@ func main() {
 		if usingBeforeCacheItemCount > 0 {
 			server.MiddlewareChain.InsertHead(beforeCacheMiddleware)
 		}
+	}
+
+	rateLimiterPluginConf := configInfo.Plugins.RakeLimit
+	if rateLimiterPluginConf.Start {
+		rateLimiterMiddleware := rate_limit.NewLeakyRateLimiterMiddleware()
+		server.MiddlewareChain.InsertHead(rateLimiterMiddleware)
 	}
 
 	statisticPluginConf := configInfo.Plugins.Statistic

@@ -88,3 +88,16 @@ func DecodeJSONRPCResponse(message []byte) (req *JSONRpcResponse, err error) {
 	}
 	return
 }
+
+// RpcRequestDispatchType: dispatch type of rpc request
+type RpcRequestDispatchType int
+
+const (
+	RPC_REQUEST_CHANGE_TYPE_ADD_REQUEST RpcRequestDispatchType = 1 // add rpc request to dispatcher
+	RPC_REQUEST_CHANGE_TYPE_ADD_RESPONSE RpcRequestDispatchType = 2 // add rpc response to dispatcher
+)
+
+type RpcRequestDispatchData struct {
+	Type RpcRequestDispatchType
+	Data *JSONRpcRequestSession
+}

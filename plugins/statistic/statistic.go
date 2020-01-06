@@ -107,7 +107,7 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 					}
 				}()
 			case resSession := <- middleware.rpcResponsesReceived:
-				_ = resSession // TODO
+				_ = resSession // TODO: record every rpc response-request time
 			default:
 				time.Sleep(50 * time.Millisecond)
 			}

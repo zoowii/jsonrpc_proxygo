@@ -64,6 +64,29 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 				return
 			case <- connSession.ConnectionDone:
 				return
+			case rpcDispatch := <- connSession.RpcRequestsDispatchChannel:
+				if rpcDispatch == nil {
+					return
+				}
+				rpcRequestSession := rpcDispatch.Data
+				switch rpcDispatch.Type {
+				case RPC_REQUEST_CHANGE_TYPE_ADD_REQUEST:
+					rpcRequest := rpcRequestSession.Request
+					rpcRequestId := rpcRequest.Id
+					newChan := rpcRequestSession.RpcResponseFutureChan
+					if old, ok := connSession.RpcRequestsMap[rpcRequestId]; ok {
+						close(old)
+					}
+					connSession.RpcRequestsMap[rpcRequestId] = newChan
+				case RPC_REQUEST_CHANGE_TYPE_ADD_RESPONSE:
+					rpcRequest := rpcRequestSession.Request
+					rpcRequestId := rpcRequest.Id
+					rpcRequestSession.RpcResponseFutureChan = nil
+					if resChan, ok := connSession.RpcRequestsMap[rpcRequestId]; ok {
+						close(resChan)
+						delete(connSession.RpcRequestsMap, rpcRequestId)
+					}
+				}
 			case pack := <- connSession.RequestConnectionWriteChan:
 				if pack == nil {
 					return
@@ -117,7 +140,6 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 			continue
 		}
 		go func() {
-			// TODO: 目前还是阻塞的方式处理请求和返回。需要改成不阻塞的，方便一个连接中同时并发处理多个请求
 			err = server.MiddlewareChain.ProcessJSONRpcRequest(rpcSession)
 			if err != nil {
 				log.Warn("ProcessRpcRequest error", err)

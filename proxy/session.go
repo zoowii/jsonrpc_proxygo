@@ -33,9 +33,6 @@ func NewWebSocketPack(messageType int, message []byte) *WebSocketPack {
 	}
 }
 
-// TODO: 每一层可以做异步处理而不是同步处理（比如load balance)的middleware都有一个input chan和output chan，收到请求时
-// input chan接收到数据以及output chan接收到一个待返回的slot(可以不同时),接收到input chan时去处理，处理后等output chan有空slot时填入返回数据
-
 type ConnectionSession struct {
 	RequestConnection *websocket.Conn
 	HttpResponse http.ResponseWriter
@@ -45,8 +42,7 @@ type ConnectionSession struct {
 
 	// rpc fields shared in connection session
 	RpcRequestsMap map[uint64]chan *JSONRpcResponse // rpc request id => channel notify of *JSONRpcResponse
-	RpcRequestsToDispatch chan *JSONRpcRequestSession // rpc requests to dispatch to processors(eg. upstream) to process
-	RpcResponsesFromDispatchResult chan *JSONRpcRequestSession // rpc responses result from dispatched processsors
+	RpcRequestsDispatchChannel chan *RpcRequestDispatchData // rpc requests dispatching
 
 	// same base middleware shared fields
 
@@ -63,10 +59,8 @@ func (connSession *ConnectionSession) Close() {
 	connSession.ConnectionDone = nil
 	close(connSession.RequestConnectionWriteChan)
 	connSession.RequestConnectionWriteChan = nil
-	close(connSession.RpcRequestsToDispatch)
-	connSession.RpcRequestsToDispatch = nil
-	close(connSession.RpcResponsesFromDispatchResult)
-	connSession.RpcResponsesFromDispatchResult = nil
+	close(connSession.RpcRequestsDispatchChannel)
+	connSession.RpcRequestsDispatchChannel = nil
 }
 
 func NewConnectionSession(w http.ResponseWriter, r *http.Request, requestConn *websocket.Conn) *ConnectionSession {
@@ -77,8 +71,7 @@ func NewConnectionSession(w http.ResponseWriter, r *http.Request, requestConn *w
 		HttpRequest: r,
 		ConnectionDone: make(chan struct{}),
 		RpcRequestsMap: make(map[uint64] chan *JSONRpcResponse),
-		RpcRequestsToDispatch: make(chan *JSONRpcRequestSession, 1000),
-		RpcResponsesFromDispatchResult: make(chan *JSONRpcRequestSession, 1000),
+		RpcRequestsDispatchChannel: make(chan *RpcRequestDispatchData, 1000),
 	}
 }
 

@@ -7,7 +7,11 @@ import (
 )
 
 type LeakyRateLimiterMiddleware struct {
+	proxy.MiddlewareAdapter
+}
 
+func NewLeakyRateLimiterMiddleware() *LeakyRateLimiterMiddleware {
+	return &LeakyRateLimiterMiddleware{}
 }
 
 func (middleware *LeakyRateLimiterMiddleware) Name() string {
@@ -15,34 +19,28 @@ func (middleware *LeakyRateLimiterMiddleware) Name() string {
 }
 
 func (middleware *LeakyRateLimiterMiddleware) OnStart() (err error) {
-	return
+	return middleware.NextOnStart()
 }
 
-func (middleware *LeakyRateLimiterMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *LeakyRateLimiterMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnection(session)
 }
 
-func (middleware *LeakyRateLimiterMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *LeakyRateLimiterMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnectionClosed(session)
 }
 
 func (middleware *LeakyRateLimiterMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
-	messageType int, message []byte) (next bool, err error) {
-	next = true
-	return
+	messageType int, message []byte) (err error) {
+	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
-func (middleware *LeakyRateLimiterMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *LeakyRateLimiterMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextOnJSONRpcRequest(session)
 }
-func (middleware *LeakyRateLimiterMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *LeakyRateLimiterMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextOnJSONRpcResponse(session)
 }
 
-func (middleware *LeakyRateLimiterMiddleware) ProcessJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *LeakyRateLimiterMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextProcessJSONRpcRequest(session)
 }

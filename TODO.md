@@ -1,6 +1,7 @@
 TODO
 ======
 
+* benchmark
 * heartbeat middleware
 * rate limiting middleware
 * permission control middleware
