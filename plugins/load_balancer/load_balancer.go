@@ -8,35 +8,39 @@ import (
 
 var log = utils.GetLogger("load_balancer")
 
-var upstreamItemIdGen = 0
-
 type UpstreamItem struct {
-	id int
+	Id int64
 	TargetEndpoint string
 	Weight int64
-	currentWeight int64
 }
 
+var upstreamItemIdGen int64 = 0
+
 func NewUpstreamItem(targetEndpoint string, weight int64) *UpstreamItem {
-	upstreamItemIdGen++
+	defer func() {
+		upstreamItemIdGen++
+	}()
 	return &UpstreamItem{
-		id: upstreamItemIdGen,
+		Id: upstreamItemIdGen,
 		TargetEndpoint: targetEndpoint,
 		Weight: weight,
-		currentWeight: weight,
 	}
 }
 
 type LoadBalanceMiddleware struct {
+	selector *WrrSelector
 	UpstreamItems []*UpstreamItem
 }
 
 func NewLoadBalanceMiddleware() *LoadBalanceMiddleware {
-	return &LoadBalanceMiddleware{}
+	return &LoadBalanceMiddleware{
+		selector: NewWrrSelector(),
+	}
 }
 
 func (middleware *LoadBalanceMiddleware) AddUpstreamItem(item *UpstreamItem) *LoadBalanceMiddleware {
 	middleware.UpstreamItems = append(middleware.UpstreamItems, item)
+	middleware.selector.AddNode(item.Weight, item)
 	return middleware
 }
 
@@ -45,26 +49,16 @@ func (middleware *LoadBalanceMiddleware) Name() string {
 }
 
 func (middleware *LoadBalanceMiddleware) selectTargetByWeight() *UpstreamItem {
-	// use WeightedRound-Robin algorithm to select an target to use
-	var totalWeight int64 = 0
-	var maxWeight int64 = -1
-	var maxWeightItem *UpstreamItem = nil
-	for _, item := range middleware.UpstreamItems {
-		totalWeight += item.Weight
-		item.currentWeight += item.Weight
-		if maxWeightItem == nil {
-			maxWeight = item.currentWeight
-			maxWeightItem = item
-		} else if item.currentWeight > maxWeight {
-			maxWeight = item.currentWeight
-			maxWeightItem = item
-		}
-	}
-	if maxWeightItem == nil {
+	selected, err := middleware.selector.Next()
+	if err != nil {
+		log.Fatalln("load balance selector next error", err)
 		return nil
 	}
-	maxWeightItem.currentWeight -= totalWeight
-	return maxWeightItem
+	selectedUpStreamItem, ok := selected.(*UpstreamItem)
+	if !ok {
+		return nil
+	}
+	return selectedUpStreamItem
 }
 
 func (middleware *LoadBalanceMiddleware) OnStart() (err error) {
@@ -79,7 +73,7 @@ func (middleware *LoadBalanceMiddleware) OnConnection(session *proxy.ConnectionS
 		err = errors.New("can't select one upstream target")
 		return
 	}
-	log.Debugf("selected upstream target item id#%d endpoint: %s\n",selectedTargetItem.id, selectedTargetItem.TargetEndpoint)
+	log.Debugf("selected upstream target item id#%d endpoint: %s\n",selectedTargetItem.Id, selectedTargetItem.TargetEndpoint)
 	session.SelectedUpstreamTarget = &selectedTargetItem.TargetEndpoint
 	return
 }
