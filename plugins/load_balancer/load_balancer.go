@@ -28,6 +28,7 @@ func NewUpstreamItem(targetEndpoint string, weight int64) *UpstreamItem {
 }
 
 type LoadBalanceMiddleware struct {
+	proxy.MiddlewareAdapter
 	selector *WrrSelector
 	UpstreamItems []*UpstreamItem
 }
@@ -62,12 +63,10 @@ func (middleware *LoadBalanceMiddleware) selectTargetByWeight() *UpstreamItem {
 }
 
 func (middleware *LoadBalanceMiddleware) OnStart() (err error) {
-	return
+	return middleware.NextOnStart()
 }
 
-func (middleware *LoadBalanceMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-
+func (middleware *LoadBalanceMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
 	selectedTargetItem := middleware.selectTargetByWeight()
 	if selectedTargetItem == nil {
 		err = errors.New("can't select one upstream target")
@@ -75,29 +74,25 @@ func (middleware *LoadBalanceMiddleware) OnConnection(session *proxy.ConnectionS
 	}
 	log.Debugf("selected upstream target item id#%d endpoint: %s\n",selectedTargetItem.Id, selectedTargetItem.TargetEndpoint)
 	session.SelectedUpstreamTarget = &selectedTargetItem.TargetEndpoint
-	return
+
+	return middleware.NextOnConnection(session)
 }
 
-func (middleware *LoadBalanceMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *LoadBalanceMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnectionClosed(session)
 }
 
 func (middleware *LoadBalanceMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
-	messageType int, message []byte) (next bool, err error) {
-	next = true
-	return
+	messageType int, message []byte) (err error) {
+	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
-func (middleware *LoadBalanceMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *LoadBalanceMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextOnJSONRpcRequest(session)
 }
-func (middleware *LoadBalanceMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *LoadBalanceMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextOnJSONRpcResponse(session)
 }
 
-func (middleware *LoadBalanceMiddleware) ProcessJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *LoadBalanceMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextProcessJSONRpcRequest(session)
 }

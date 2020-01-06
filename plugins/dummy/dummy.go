@@ -5,7 +5,7 @@ import (
 )
 
 type DummyMiddleware struct {
-
+	proxy.MiddlewareAdapter
 }
 
 func (middleware *DummyMiddleware) Name() string {
@@ -13,34 +13,28 @@ func (middleware *DummyMiddleware) Name() string {
 }
 
 func (middleware *DummyMiddleware) OnStart() (err error) {
-	return
+	return middleware.NextOnStart()
 }
 
-func (middleware *DummyMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *DummyMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnection(session)
 }
 
-func (middleware *DummyMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *DummyMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnectionClosed(session)
 }
 
 func (middleware *DummyMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
-	messageType int, message []byte) (next bool, err error) {
-	next = true
-	return
+	messageType int, message []byte) (err error) {
+	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
-func (middleware *DummyMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *DummyMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextOnJSONRpcRequest(session)
 }
-func (middleware *DummyMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *DummyMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextOnJSONRpcResponse(session)
 }
 
-func (middleware *DummyMiddleware) ProcessJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *DummyMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextProcessJSONRpcRequest(session)
 }

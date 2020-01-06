@@ -8,6 +8,8 @@ import (
  * DisableMiddleware is a middleware which can disable some jsonrpc methods
  */
 type DisableMiddleware struct {
+	proxy.MiddlewareAdapter
+	next proxy.Middleware
 	rpcMethodsBlacklist map[string]interface{}
 }
 
@@ -32,40 +34,34 @@ func (middleware *DisableMiddleware) isDisabledRpcMethod(methodName string) bool
 }
 
 func (middleware *DisableMiddleware) OnStart() (err error) {
-	return
+	return middleware.NextOnStart()
 }
 
-func (middleware *DisableMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *DisableMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnection(session)
 }
 
-func (middleware *DisableMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *DisableMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnectionClosed(session)
 }
 
 func (middleware *DisableMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
-	messageType int, message []byte) (next bool, err error) {
-	next = true
-	return
+	messageType int, message []byte) (err error) {
+	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
-func (middleware *DisableMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
+func (middleware *DisableMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
 	rpcRequest := session.Request
 	if middleware.isDisabledRpcMethod(rpcRequest.Method) {
 		response := proxy.NewJSONRpcResponse(rpcRequest.Id, nil, proxy.NewJSONRpcResponseError(proxy.RPC_DISABLED_RPC_METHOD, "disabled rpc method", nil))
 		session.FillRpcResponse(response)
-		next = false
+		return
 	}
-	return
+	return middleware.NextOnJSONRpcRequest(session)
 }
-func (middleware *DisableMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *DisableMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextOnJSONRpcResponse(session)
 }
 
-func (middleware *DisableMiddleware) ProcessJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *DisableMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextProcessJSONRpcRequest(session)
 }

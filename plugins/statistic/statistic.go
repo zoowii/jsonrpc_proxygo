@@ -17,6 +17,7 @@ import (
 var log = utils.GetLogger("statistic")
 
 type StatisticMiddleware struct {
+	proxy.MiddlewareAdapter
 	rpcRequestsReceived chan *proxy.JSONRpcRequestSession
 	rpcResponsesReceived chan *proxy.JSONRpcRequestSession
 
@@ -112,36 +113,31 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 			}
 		}
 	}()
-	return
+	return middleware.NextOnStart()
 }
 
-func (middleware *StatisticMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *StatisticMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnection(session)
 }
 
-func (middleware *StatisticMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *StatisticMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnectionClosed(session)
 }
 
 func (middleware *StatisticMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
-	messageType int, message []byte) (next bool, err error) {
-	next = true
-	return
+	messageType int, message []byte) (err error) {
+	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
-func (middleware *StatisticMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
+func (middleware *StatisticMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
 	middleware.rpcRequestsReceived <- session
-	return
+	return middleware.NextOnJSONRpcRequest(session)
 }
-func (middleware *StatisticMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
+func (middleware *StatisticMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (err error) {
+	err = middleware.NextOnJSONRpcResponse(session)
 	middleware.rpcResponsesReceived <- session
 	return
 }
 
-func (middleware *StatisticMiddleware) ProcessJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
-	return
+func (middleware *StatisticMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	return middleware.NextProcessJSONRpcRequest(session)
 }

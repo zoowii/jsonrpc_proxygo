@@ -16,6 +16,7 @@ type BeforeCacheConfigItem struct {
  * eg. when rpc format is {method: "callOrOther", params: ["realMethodName", ...otherArgs]} for some methods
  */
 type BeforeCacheMiddleware struct {
+	proxy.MiddlewareAdapter
 	BeforeCacheConfigItems []*BeforeCacheConfigItem
 }
 
@@ -40,17 +41,17 @@ func (middleware *BeforeCacheMiddleware) OnStart() (err error) {
 	return
 }
 
-func (middleware *BeforeCacheMiddleware) OnConnection(session *proxy.ConnectionSession) (bool, error) {
-	return true, nil
+func (middleware *BeforeCacheMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnection(session)
 }
 
-func (middleware *BeforeCacheMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (bool, error) {
-	return true, nil
+func (middleware *BeforeCacheMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+	return middleware.NextOnConnectionClosed(session)
 }
 
 func (middleware *BeforeCacheMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
-	messageType int, message []byte) (bool, error) {
-	return true, nil
+	messageType int, message []byte) (error) {
+	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
 
 func (middleware *BeforeCacheMiddleware) findBeforeCacheConfigItem(rpcReq *proxy.JSONRpcRequest) (result *BeforeCacheConfigItem, ok bool) {
@@ -88,8 +89,12 @@ func MakeMethodNameForCache(methodName string, paramsArray []interface{}) (resul
 	return
 }
 
-func (middleware *BeforeCacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
+func (middleware *BeforeCacheMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	defer func() {
+		if err == nil {
+			err = middleware.NextOnJSONRpcRequest(session)
+		}
+	}()
 	rpcReq := session.Request
 	beforeCacheConfigItem, ok := middleware.findBeforeCacheConfigItem(rpcReq)
 	if !ok {
@@ -111,10 +116,10 @@ func (middleware *BeforeCacheMiddleware) OnJSONRpcRequest(session *proxy.JSONRpc
 	// log.Debugf("[before-cache] methodNameForCache %s set\n", methodNameForCache)
 	return
 }
-func (middleware *BeforeCacheMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (bool, error) {
-	return true, nil
+func (middleware *BeforeCacheMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (error) {
+	return middleware.NextOnJSONRpcResponse(session)
 }
 
-func (middleware *BeforeCacheMiddleware) ProcessJSONRpcRequest(session *proxy.JSONRpcRequestSession) (bool, error) {
-	return true, nil
+func (middleware *BeforeCacheMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (error) {
+	return middleware.NextProcessJSONRpcRequest(session)
 }

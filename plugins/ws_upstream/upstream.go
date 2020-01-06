@@ -13,6 +13,7 @@ import (
 var log = utils.GetLogger("upstream")
 
 type WsUpstreamMiddleware struct {
+	proxy.MiddlewareAdapter
 	UpstreamTimeout time.Duration
 	DefaultTargetEndpoint string
 }
@@ -103,10 +104,10 @@ func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponseAndToDisp
 }
 
 func (middleware *WsUpstreamMiddleware) OnStart() (err error) {
-	return
+	return middleware.NextOnStart()
 }
 
-func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSession) (next bool, err error) {
+func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSession) (err error) {
 	if session.UpstreamTargetConnection != nil {
 		err = errors.New("when OnConnection, session has connected to upstream target before")
 		return
@@ -149,12 +150,13 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *proxy.ConnectionSe
 		}
 	}()
 
-	next = true
-	return
+	return middleware.NextOnConnection(session)
 }
 
-func (middleware *WsUpstreamMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (next bool, err error) {
-	next = true
+func (middleware *WsUpstreamMiddleware) OnConnectionClosed(session *proxy.ConnectionSession) (err error) {
+	// call next first
+	err = middleware.NextOnConnectionClosed(session)
+
 	if session.UpstreamTargetConnection != nil {
 		err = session.UpstreamTargetConnection.Close()
 		if err == nil {
@@ -213,7 +215,12 @@ func (middleware *WsUpstreamMiddleware) sendRequestToTargetConn(session *proxy.C
 }
 
 func (middleware *WsUpstreamMiddleware) OnWebSocketFrame(session *proxy.JSONRpcRequestSession,
-	messageType int, message []byte) (bool, error) {
+	messageType int, message []byte) (err error) {
+	defer func() {
+		if err == nil {
+			err = middleware.NextOnWebSocketFrame(session, messageType, message)
+		}
+	}()
 	switch messageType {
 	case websocket.PingMessage:
 		middleware.sendRequestToTargetConn(session.Conn, messageType, message, nil, nil)
@@ -224,23 +231,31 @@ func (middleware *WsUpstreamMiddleware) OnWebSocketFrame(session *proxy.JSONRpcR
 	case websocket.CloseMessage:
 		middleware.sendRequestToTargetConn(session.Conn, messageType, message, nil, nil)
 	}
-	return true, nil
+	return
 }
-func (middleware *WsUpstreamMiddleware) OnJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
+func (middleware *WsUpstreamMiddleware) OnRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	defer func() {
+		if err == nil {
+			err = middleware.NextOnJSONRpcRequest(session)
+		}
+	}()
 	connSession := session.Conn
 	rpcRequest := session.Request
 	rpcRequestBytes := session.RequestBytes
 
-	// create response future before to use in ProcessJSONRpcRequest
+	// create response future before to use in ProcessRpcRequest
 	session.RpcResponseFutureChan = make(chan *proxy.JSONRpcResponse)
+	// TODO: 需要确保connSession还没被关闭
 	connSession.RpcRequestsToDispatch <- session
 
 	middleware.sendRequestToTargetConn(connSession, websocket.TextMessage, rpcRequestBytes, rpcRequest, session.RpcResponseFutureChan)
 	return
 }
-func (middleware *WsUpstreamMiddleware) OnJSONRpcResponse(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
+func (middleware *WsUpstreamMiddleware) OnRpcResponse(session *proxy.JSONRpcRequestSession) (err error) {
+	err = middleware.NextOnJSONRpcResponse(session)
+	if err != nil {
+		return
+	}
 	connSession := session.Conn
 	defer func() {
 		connSession.RpcResponsesFromDispatchResult <- session // notify connSession this rpc response is end
@@ -252,8 +267,12 @@ func (middleware *WsUpstreamMiddleware) OnJSONRpcResponse(session *proxy.JSONRpc
 	return
 }
 
-func (middleware *WsUpstreamMiddleware) ProcessJSONRpcRequest(session *proxy.JSONRpcRequestSession) (next bool, err error) {
-	next = true
+func (middleware *WsUpstreamMiddleware) ProcessRpcRequest(session *proxy.JSONRpcRequestSession) (err error) {
+	defer func() {
+		if err == nil {
+			err = middleware.NextProcessJSONRpcRequest(session)
+		}
+	}()
 	if session.Response != nil {
 		return
 	}

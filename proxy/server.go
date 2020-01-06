@@ -52,8 +52,8 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 	defer server.MiddlewareChain.OnConnectionClosed(connSession)
 	// must ensure middleware chain not change after calling OnConnection,
 	// otherwise some removed middlewares may not call OnConnectionClosed
-	if _, connErr := server.MiddlewareChain.OnConnection(connSession); connErr != nil {
-		log.Println("OnConnection error", connErr)
+	if connErr := server.MiddlewareChain.OnConnection(connSession); connErr != nil {
+		log.Warn("OnConnection error", connErr)
 		return
 	}
 	ctx := context.Background()
@@ -82,16 +82,16 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 		mt, message, err := c.ReadMessage()
 		if err != nil {
 			if !utils.IsClosedOrGoingAwayCloseError(err) {
-				log.Println("read from source connection error:", err)
+				log.Warn("read from source connection error:", err)
 			}
 			break
 		}
 
 		rpcSession := NewJSONRpcRequestSession(connSession)
 
-		_, err = server.MiddlewareChain.OnWebSocketFrame(rpcSession, mt, message)
+		err = server.MiddlewareChain.OnWebSocketFrame(rpcSession, mt, message)
 		if err != nil {
-			log.Println("OnWebSocketFrame error", err)
+			log.Warn("OnWebSocketFrame error", err)
 			continue
 		}
 		switch mt {
@@ -106,35 +106,36 @@ func (server *ProxyServer) serverHandler(w http.ResponseWriter, r *http.Request)
 		}
 		rpcReq, err := DecodeJSONRPCRequest(message)
 		if err != nil {
-			log.Println("jsonrpc request error", err)
+			log.Warn("jsonrpc request error", err)
 			continue
 		}
 		rpcSession.Request = rpcReq
 		rpcSession.RequestBytes = message
-		_, err = server.MiddlewareChain.OnJSONRpcRequest(rpcSession)
+		err = server.MiddlewareChain.OnJSONRpcRequest(rpcSession)
 		if err != nil {
-			log.Println("OnJSONRpcRequest error", err)
+			log.Warn("OnRpcRequest error", err)
 			continue
 		}
 		go func() {
-			_, err = server.MiddlewareChain.ProcessJSONRpcRequest(rpcSession)
+			// TODO: 目前还是阻塞的方式处理请求和返回。需要改成不阻塞的，方便一个连接中同时并发处理多个请求
+			err = server.MiddlewareChain.ProcessJSONRpcRequest(rpcSession)
 			if err != nil {
-				log.Println("ProcessJSONRpcRequest error", err)
+				log.Warn("ProcessRpcRequest error", err)
 				return
 			}
 			rpcRes := rpcSession.Response
 			if rpcRes == nil {
-				log.Println("empty jsonrpc response, maybe no valid middleware added")
+				log.Error("empty jsonrpc response, maybe no valid middleware added")
 				return
 			}
-			_, err = server.MiddlewareChain.OnJSONRpcResponse(rpcSession)
+			err = server.MiddlewareChain.OnJSONRpcResponse(rpcSession)
 			if err != nil {
-				log.Println("OnJSONRpcResponse error", err)
+				log.Warn("OnRpcResponse error", err)
 				return
 			}
 			resBytes, err := EncodeJSONRPCResponse(rpcRes)
 			if err != nil {
-				log.Println("encodeJSONRPCResponse err", err)
+				log.Error("encodeJSONRPCResponse err", err)
 				return
 			}
 			connSession.RequestConnectionWriteChan <- NewWebSocketPack(websocket.TextMessage, resBytes)
