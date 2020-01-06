@@ -42,9 +42,11 @@ type ServerConfig struct {
 			DisabledRpcMethods []string `json:"disabled_rpc_methods"`
 		} `json:"disable,omitempty"`
 
-		RakeLimit struct {
+		RateLimit struct {
 			Start bool `json:"start,omitempty"`
-		} `json:"rake_limit,omitempty"`
+			ConnectionRate int `json:"connection_rate,omitempty"`
+			RpcRate int `json:"rpc_rate,omitempty"`
+		} `json:"rate_limit,omitempty"`
 	} `json:"plugins,omitempty"`
 }
 

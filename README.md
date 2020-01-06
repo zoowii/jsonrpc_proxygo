@@ -3,7 +3,7 @@ jsonrpc_proxygo
 
 http/websocket JSONRPC server proxy with middleware mechanism.
 
-you can add middlewares like upstream, cache, load balance, log, tracing, heartbeat, statistic, etc.
+you can add middlewares like upstream, cache, load balance, log, tracing, heartbeat, statistic, rate-limit, etc.
 
 # Supported Middlewares
 
@@ -12,6 +12,7 @@ you can add middlewares like upstream, cache, load balance, log, tracing, heartb
 * cache: cache some jsonrpc method's responses by jsonrpc method name and some params for some time
 * before-cache: extract some jsonrpc params to cache key to use in cache middleware
 * statistic: calculate statistic metrics of the jsonrpc services. It works async and won't block the service
+* rate-limit
 
 # Usage
 
@@ -59,6 +60,11 @@ go build
       "disabled_rpc_methods": [
         "stop"
       ]
+    },
+    "rate_limit": {
+      "start": true,
+      "connection_rate": 10000,
+      "rpc_rate": 1000000
     }
   }
 }

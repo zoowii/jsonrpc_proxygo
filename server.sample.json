@@ -30,6 +30,11 @@
       "disabled_rpc_methods": [
         "stop"
       ]
+    },
+    "rate_limit": {
+      "start": true,
+      "connection_rate": 10000,
+      "rpc_rate": 1000000
     }
   }
 }

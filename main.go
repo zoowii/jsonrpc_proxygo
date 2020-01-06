@@ -122,9 +122,15 @@ func main() {
 		}
 	}
 
-	rateLimiterPluginConf := configInfo.Plugins.RakeLimit
+	rateLimiterPluginConf := configInfo.Plugins.RateLimit
 	if rateLimiterPluginConf.Start {
-		rateLimiterMiddleware := rate_limit.NewLeakyRateLimiterMiddleware()
+		if rateLimiterPluginConf.ConnectionRate <= 0 {
+			rateLimiterPluginConf.ConnectionRate = 1000000
+		}
+		if rateLimiterPluginConf.RpcRate <= 0 {
+			rateLimiterPluginConf.RpcRate = 10000000
+		}
+		rateLimiterMiddleware := rate_limit.NewRateLimiterMiddleware(rateLimiterPluginConf.ConnectionRate, rateLimiterPluginConf.RpcRate)
 		server.MiddlewareChain.InsertHead(rateLimiterMiddleware)
 	}
 
