@@ -1,4 +1,4 @@
-package ws_upstream
+package pool
 
 import (
 	"fmt"
@@ -47,7 +47,7 @@ func TestUpstreamConnPool(t *testing.T) {
 	_, err = pool.Get()
 	assert.True(t, err != nil)
 	println(err.Error())
-	assert.True(t, IsPoolOverMaxSizeError(err))
+	assert.True(t, pool.IsPoolMaxSizeExceedError(err))
 
 	pool.GiveBack(conn1)
 	conn3, err := pool.Get()

@@ -1,4 +1,4 @@
-package ws_upstream
+package pool
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // Poolable: anything that can used in ConnPool
@@ -17,13 +18,16 @@ type Poolable interface {
 type ConnPool interface {
 	io.Closer
 	// GetOrWait will return/create available conn or wait to have available one
-	GetOrWait() (Poolable, error)
-	// Get will return/create available conn or return error if max limit exceed
+	GetOrWait(maxWaitTime time.Duration) (Poolable, error)
+	// Get will return/create available conn or return error if max limit exceed. This method not block
 	Get() (Poolable, error)
 	// GiveBack will give the {conn} back to the pool as reusable
 	GiveBack(conn Poolable) error
 	// close the under conn and give it back to pool. maybe called when the under connection is closed before
 	RemoveConn(conn Poolable) error
+
+	IsTimeoutError(err error) bool
+	IsPoolMaxSizeExceedError(err error) bool
 }
 
 type PoolConnProxy struct {
@@ -93,6 +97,7 @@ func (pool *connPool) createConnections(count int) (err error) {
 type poolCodeErr int
 const (
 	OverPoolMaxSizeErrorCode = 1
+	PoolAcquireTimeoutErrorCode = 2
 )
 type poolError struct {
 	code poolCodeErr
@@ -102,14 +107,21 @@ func (err *poolError) Error() string {
 	return err.msg
 }
 
-func NewPoolError(code poolCodeErr, msg string) error {
+func newPoolError(code poolCodeErr, msg string) error {
 	return &poolError{
 		code: code,
 		msg:  msg,
 	}
 }
 
-func IsPoolOverMaxSizeError(err error) bool {
+func (pool *connPool) IsTimeoutError(err error) bool {
+	poolErr, ok := err.(*poolError)
+	if !ok {
+		return false
+	}
+	return PoolAcquireTimeoutErrorCode == poolErr.code
+}
+func (pool *connPool) IsPoolMaxSizeExceedError(err error) bool {
 	poolErr, ok := err.(*poolError)
 	if !ok {
 		return false
@@ -124,7 +136,7 @@ func (pool *connPool) wrapConn(conn Poolable) *PoolConnProxy {
 	}
 }
 
-func (pool *connPool) GetOrWait() (result Poolable, err error) {
+func (pool *connPool) GetOrWait(maxWaitTime time.Duration) (result Poolable, err error) {
 	select {
 	case conn := <-pool.availableInstances:
 		if conn == nil {
@@ -133,6 +145,9 @@ func (pool *connPool) GetOrWait() (result Poolable, err error) {
 			return
 		}
 		result = pool.wrapConn(conn)
+		return
+	case <- time.After(maxWaitTime):
+		err = newPoolError(PoolAcquireTimeoutErrorCode, "acquire timeout")
 		return
 	}
 }
@@ -149,7 +164,7 @@ func (pool *connPool) Get() (result Poolable, err error) {
 		return
 	default:
 		if pool.queueSize >= int32(pool.max) {
-			err = NewPoolError(OverPoolMaxSizeErrorCode, "pool size limit exceed")
+			err = newPoolError(OverPoolMaxSizeErrorCode, "pool size limit exceed")
 			return
 		}
 		err = pool.createConnections(1)
