@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/gorilla/websocket"
-	"github.com/zoowii/jsonrpc_proxygo/plugin"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"net/http"
@@ -20,38 +19,22 @@ var upgrader = websocket.Upgrader{
 type WebSocketJsonRpcProvider struct {
 	endpoint string
 	websocketPath string
-	middlewareChain *plugin.MiddlewareChain
+	rpcProcessor RpcProviderProcessor
 }
 
 func NewWebSocketJsonRpcProvider(endpoint string, websocketPath string) *WebSocketJsonRpcProvider {
 	return &WebSocketJsonRpcProvider{
 		endpoint:      endpoint,
 		websocketPath: websocketPath,
-		middlewareChain: nil,
+		rpcProcessor: nil,
 	}
 }
 
-func (provider *WebSocketJsonRpcProvider) SetMiddlewareChain(chain *plugin.MiddlewareChain) {
-	provider.middlewareChain = chain
+func (provider *WebSocketJsonRpcProvider) SetRpcProcessor(processor RpcProviderProcessor) {
+	provider.rpcProcessor = processor
 }
 
-func (provider *WebSocketJsonRpcProvider) serverHandler(w http.ResponseWriter, r *http.Request) {
-	c, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Print("upgrade:", err)
-		return
-	}
-	defer c.Close()
-	connSession := rpc.NewConnectionSession(w, r, c)
-	defer connSession.Close()
-	defer provider.middlewareChain.OnConnectionClosed(connSession)
-	// must ensure middleware chain not change after calling OnConnection,
-	// otherwise some removed middlewares may not call OnConnectionClosed
-	if connErr := provider.middlewareChain.OnConnection(connSession); connErr != nil {
-		log.Warn("OnConnection error", connErr)
-		return
-	}
-	ctx := context.Background()
+func (provider *WebSocketJsonRpcProvider) asyncWatchMessagesToConnection(ctx context.Context, connSession *rpc.ConnectionSession) {
 	go func() {
 		for {
 			select {
@@ -86,7 +69,7 @@ func (provider *WebSocketJsonRpcProvider) serverHandler(w http.ResponseWriter, r
 				if pack == nil {
 					return
 				}
-				err := c.WriteMessage(pack.MessageType, pack.Message)
+				err := connSession.RequestConnection.WriteMessage(pack.MessageType, pack.Message)
 				if err != nil {
 					log.Println("write websocket frame error", err)
 					return
@@ -96,6 +79,9 @@ func (provider *WebSocketJsonRpcProvider) serverHandler(w http.ResponseWriter, r
 			}
 		}
 	}()
+}
+
+func (provider *WebSocketJsonRpcProvider) watchConnectionMessages(ctx context.Context, connSession *rpc.ConnectionSession, c *websocket.Conn) {
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
@@ -107,19 +93,18 @@ func (provider *WebSocketJsonRpcProvider) serverHandler(w http.ResponseWriter, r
 
 		rpcSession := rpc.NewJSONRpcRequestSession(connSession)
 
-		err = provider.middlewareChain.OnWebSocketFrame(rpcSession, mt, message)
+		err = provider.rpcProcessor.OnRawRequestMessage(connSession, rpcSession, mt, message)
 		if err != nil {
 			log.Warn("OnWebSocketFrame error", err)
 			continue
 		}
 		switch mt {
 		case websocket.CloseMessage:
-			_ = c.Close()
 			return
 		}
 		log.Debugf("recv: %s\n", message)
 		if mt == websocket.BinaryMessage {
-			// binary message should be processed by middlewares, not treated as jsonrpc request
+			// binary message should be processed by middlewares only, not treated as jsonrpc request
 			continue
 		}
 		rpcReq, err := rpc.DecodeJSONRPCRequest(message)
@@ -129,40 +114,37 @@ func (provider *WebSocketJsonRpcProvider) serverHandler(w http.ResponseWriter, r
 		}
 		rpcSession.Request = rpcReq
 		rpcSession.RequestBytes = message
-		err = provider.middlewareChain.OnJSONRpcRequest(rpcSession)
+		err = provider.rpcProcessor.OnRpcRequest(connSession, rpcSession)
 		if err != nil {
-			log.Warn("OnRpcRequest error", err)
+			log.Warn(err)
 			continue
 		}
-		go func() {
-			err = provider.middlewareChain.ProcessJSONRpcRequest(rpcSession)
-			if err != nil {
-				log.Warn("ProcessRpcRequest error", err)
-				return
-			}
-			rpcRes := rpcSession.Response
-			if rpcRes == nil {
-				log.Error("empty jsonrpc response, maybe no valid middleware added")
-				return
-			}
-			err = provider.middlewareChain.OnJSONRpcResponse(rpcSession)
-			if err != nil {
-				log.Warn("OnRpcResponse error", err)
-				return
-			}
-			resBytes, err := rpc.EncodeJSONRPCResponse(rpcRes)
-			if err != nil {
-				log.Error("encodeJSONRPCResponse err", err)
-				return
-			}
-			connSession.RequestConnectionWriteChan <- rpc.NewWebSocketPack(websocket.TextMessage, resBytes)
-		}()
 	}
 }
 
+func (provider *WebSocketJsonRpcProvider) serverHandler(w http.ResponseWriter, r *http.Request) {
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Warn("upgrade:", err)
+		return
+	}
+	defer c.Close()
+	connSession := rpc.NewConnectionSession(w, r, c)
+	defer connSession.Close()
+	defer provider.rpcProcessor.OnConnectionClosed(connSession)
+	if connErr := provider.rpcProcessor.NotifyNewConnection(connSession); connErr != nil {
+		log.Warn("OnConnection error", connErr)
+		return
+	}
+	ctx := context.Background()
+
+	provider.asyncWatchMessagesToConnection(ctx, connSession)
+	provider.watchConnectionMessages(ctx, connSession, c)
+}
+
 func (provider *WebSocketJsonRpcProvider) ListenAndServe() (err error) {
-	if provider.middlewareChain == nil {
-		err = errors.New("please set provider.middlewareChain before ListenAndServe")
+	if provider.rpcProcessor == nil {
+		err = errors.New("please set provider.rpcProcessor before ListenAndServe")
 		return
 	}
 	wrappedHandler := func (w http.ResponseWriter, r *http.Request) {
