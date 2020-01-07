@@ -87,6 +87,7 @@ func (middleware *WsUpstreamMiddleware) OnStart() (err error) {
 }
 
 func (middleware *WsUpstreamMiddleware) OnConnection(session *rpc.ConnectionSession) (err error) {
+	// TODO: upstream连接可以设置每个连接新建一个到upstream的连接，也可以选择从upstream connection pool中选择一个满足target的连接复用
 	if session.UpstreamTargetConnection != nil {
 		err = errors.New("when OnConnection, session has connected to upstream target before")
 		return

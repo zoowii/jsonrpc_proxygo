@@ -5,7 +5,7 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 )
 
-func LoadUpstreamPluginConfig(chain *plugin.MiddlewareChain, configInfo *config.ServerConfig) {
+func LoadWsUpstreamPluginConfig(chain *plugin.MiddlewareChain, configInfo *config.ServerConfig) {
 	upstreamPluginConf := configInfo.Plugins.Upstream
 	if len(upstreamPluginConf.TargetEndpoints) < 1 {
 		log.Fatalln("empty upstream target endpoints in config")

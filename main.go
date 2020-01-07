@@ -55,7 +55,7 @@ func main() {
 	
 	server := proxy.NewProxyServer(provider)
 
-	ws_upstream.LoadUpstreamPluginConfig(server.MiddlewareChain, &configInfo)
+	ws_upstream.LoadWsUpstreamPluginConfig(server.MiddlewareChain, &configInfo)
 	load_balancer.LoadLoadBalancePluginConfig(server.MiddlewareChain, &configInfo)
 	disable.LoadDisablePluginConfig(server.MiddlewareChain, &configInfo)
 	cache.LoadCachePluginConfig(server.MiddlewareChain, &configInfo)
