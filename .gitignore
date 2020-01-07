@@ -10,3 +10,6 @@
 /jsonrpc_proxygo.exe
 /jsonrpc_proxygo
 /server.json
+/rest_examples
+/.idea
+/*.iml

@@ -6,6 +6,7 @@ import (
 
 type ServerConfig struct {
 	Endpoint string `json:"endpoint"`
+	Provider string `json:"provider,omitempty"` // 'websocket', 'http', etc. default is 'websocket'
 
 	Log struct {
 		Level string `json:"level,omitempty"` // DEBUG,INFO,WARN,ERROR, INFO is default

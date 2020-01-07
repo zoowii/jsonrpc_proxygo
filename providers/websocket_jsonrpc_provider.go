@@ -34,7 +34,7 @@ func (provider *WebSocketJsonRpcProvider) SetRpcProcessor(processor RpcProviderP
 	provider.rpcProcessor = processor
 }
 
-func (provider *WebSocketJsonRpcProvider) asyncWatchMessagesToConnection(ctx context.Context, connSession *rpc.ConnectionSession) {
+func (provider *WebSocketJsonRpcProvider) asyncWatchMessagesToConnection(ctx context.Context, connSession *rpc.ConnectionSession, c *websocket.Conn) {
 	go func() {
 		for {
 			select {
@@ -69,7 +69,7 @@ func (provider *WebSocketJsonRpcProvider) asyncWatchMessagesToConnection(ctx con
 				if pack == nil {
 					return
 				}
-				err := connSession.RequestConnection.WriteMessage(pack.MessageType, pack.Message)
+				err := c.WriteMessage(pack.MessageType, pack.Message)
 				if err != nil {
 					log.Println("write websocket frame error", err)
 					return
@@ -129,7 +129,7 @@ func (provider *WebSocketJsonRpcProvider) serverHandler(w http.ResponseWriter, r
 		return
 	}
 	defer c.Close()
-	connSession := rpc.NewConnectionSession(w, r, c)
+	connSession := rpc.NewConnectionSession()
 	defer connSession.Close()
 	defer provider.rpcProcessor.OnConnectionClosed(connSession)
 	if connErr := provider.rpcProcessor.NotifyNewConnection(connSession); connErr != nil {
@@ -138,7 +138,7 @@ func (provider *WebSocketJsonRpcProvider) serverHandler(w http.ResponseWriter, r
 	}
 	ctx := context.Background()
 
-	provider.asyncWatchMessagesToConnection(ctx, connSession)
+	provider.asyncWatchMessagesToConnection(ctx, connSession, c)
 	provider.watchConnectionMessages(ctx, connSession, c)
 }
 

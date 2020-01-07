@@ -40,7 +40,19 @@ func main() {
 
 	addr := configInfo.Endpoint
 	log.Info("to start proxy server on " + addr)
-	provider := providers.NewWebSocketJsonRpcProvider(addr, "/")
+	
+	var provider providers.RpcProvider
+	switch configInfo.Provider {
+	case "http":
+		provider = providers.NewHttpJsonRpcProvider(addr, "/", &providers.HttpJsonRpcProviderOptions{
+			TimeoutSeconds: 30,
+		})
+	case "websocket":
+		provider = providers.NewWebSocketJsonRpcProvider(addr, "/")
+	default:
+		provider = providers.NewWebSocketJsonRpcProvider(addr, "/")
+	}
+	
 	server := proxy.NewProxyServer(provider)
 
 	ws_upstream.LoadUpstreamPluginConfig(server.MiddlewareChain, &configInfo)

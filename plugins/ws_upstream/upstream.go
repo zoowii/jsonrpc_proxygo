@@ -154,11 +154,11 @@ func (middleware *WsUpstreamMiddleware) OnTargetWebSocketFrame(session *rpc.Conn
 	switch messageType {
 	case websocket.CloseMessage:
 		next = false
-		requestConnWriteChan <- rpc.NewWebSocketPack(messageType, message)
+		requestConnWriteChan <- rpc.NewMessagePack(messageType, message)
 	case websocket.PingMessage:
-		requestConnWriteChan <- rpc.NewWebSocketPack(messageType, message)
+		requestConnWriteChan <- rpc.NewMessagePack(messageType, message)
 	case websocket.PongMessage:
-		requestConnWriteChan <- rpc.NewWebSocketPack(messageType, message)
+		requestConnWriteChan <- rpc.NewMessagePack(messageType, message)
 	case websocket.TextMessage:
 		// process target rpc response
 		rpcRes, err = rpc.DecodeJSONRPCResponse(message)

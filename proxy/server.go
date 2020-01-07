@@ -75,7 +75,7 @@ func (server *ProxyServer) OnRpcRequest(connSession *rpc.ConnectionSession, rpcS
 			log.Error("encodeJSONRPCResponse err", err)
 			return
 		}
-		connSession.RequestConnectionWriteChan <- rpc.NewWebSocketPack(websocket.TextMessage, resBytes)
+		connSession.RequestConnectionWriteChan <- rpc.NewMessagePack(websocket.TextMessage, resBytes)
 	}()
 	return
 }

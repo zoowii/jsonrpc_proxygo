@@ -7,6 +7,7 @@ you can add middlewares like upstream, cache, load balance, log, tracing, heartb
 
 # Supported Middlewares
 
+* exposed http jsonrpc and websocket jsonrpc interfaces(providers)
 * upstream: dispatch jsonrpc(based on websocket) to backend endpoints
 * load-balance: use WeightedRound-Robin algorithm to select one endpoint to use in upstream middleware
 * cache: cache some jsonrpc method's responses by jsonrpc method name and some params for some time
@@ -30,6 +31,7 @@ go build
 // example of server.json
 {
   "endpoint": "127.0.0.1:5000",
+  "provider": "websocket",
   "log": {
     "level": "INFO",
     "output_file": "logs/jsonrpc_proxygo.log"

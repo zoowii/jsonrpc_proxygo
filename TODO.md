@@ -5,7 +5,7 @@ TODO
 * benchmark
 * heartbeat middleware
 * permission control middleware
-* proxy server provide http jsonrpc service besides websocket jsonrpc service
+* support multiple providers at the same time(eg. both websocket and http jsonrpc)
 * support grpc/ipc/http-jsonrpc services as upstream backend
 * better statistic middleware and show metrics UI
 * opentracing

@@ -21,13 +21,13 @@ func NewJSONRpcRequestBundle(messageType int, data []byte, rpcRequest *JSONRpcRe
 	}
 }
 
-type WebSocketPack struct {
+type MessagePack struct {
 	MessageType int
 	Message []byte
 }
 
-func NewWebSocketPack(messageType int, message []byte) *WebSocketPack {
-	return &WebSocketPack{
+func NewMessagePack(messageType int, message []byte) *MessagePack {
+	return &MessagePack{
 		MessageType: messageType,
 		Message:     message,
 	}
@@ -38,7 +38,7 @@ type ConnectionSession struct {
 	HttpResponse http.ResponseWriter
 	HttpRequest *http.Request
 	ConnectionDone chan struct{}
-	RequestConnectionWriteChan chan *WebSocketPack
+	RequestConnectionWriteChan chan *MessagePack
 
 	// rpc fields shared in connection session
 	RpcRequestsMap map[uint64]chan *JSONRpcResponse // rpc request id => channel notify of *JSONRpcResponse
@@ -63,12 +63,9 @@ func (connSession *ConnectionSession) Close() {
 	connSession.RpcRequestsDispatchChannel = nil
 }
 
-func NewConnectionSession(w http.ResponseWriter, r *http.Request, requestConn *websocket.Conn) *ConnectionSession {
+func NewConnectionSession() *ConnectionSession {
 	return &ConnectionSession{
-		RequestConnection: requestConn,
-		RequestConnectionWriteChan: make(chan *WebSocketPack, 1000),
-		HttpResponse: w,
-		HttpRequest: r,
+		RequestConnectionWriteChan: make(chan *MessagePack, 1000),
 		ConnectionDone: make(chan struct{}),
 		RpcRequestsMap: make(map[uint64] chan *JSONRpcResponse),
 		RpcRequestsDispatchChannel: make(chan *RpcRequestDispatchData, 1000),
