@@ -1,6 +1,7 @@
 TODO
 ======
 
+* websocket jsonrpc subscribe and unsubscribe
 * benchmark
 * heartbeat middleware
 * permission control middleware
