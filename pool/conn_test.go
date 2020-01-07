@@ -25,32 +25,31 @@ func mockConnFactory()  (result Poolable, err error) {
 	}, nil
 }
 
-func getMockConn(conn Poolable) *mockConn {
-	proxy, _ := conn.(*PoolConnProxy)
-	real, _ := proxy.Real().(*mockConn)
+func getMockConn(conn *PoolableProxy) *mockConn {
+	real, _ := conn.Real().(*mockConn)
 	return real
 }
 
 func TestUpstreamConnPool(t *testing.T) {
-	pool, err := NewConnPool(2, 0, mockConnFactory)
+	cp, err := NewConnPool(2, 0, mockConnFactory)
 	assert.True(t, err == nil)
-	conn1, err := pool.Get()
+	conn1, err := cp.Get()
 	assert.True(t, err == nil)
 	mockConn1 := getMockConn(conn1)
 	fmt.Printf("mock conn1 data %d\n", mockConn1.data)
-	conn2, err := pool.Get()
+	conn2, err := cp.Get()
 	assert.True(t, err == nil)
 	mockConn2 := getMockConn(conn2)
 	fmt.Printf("mock conn2 data %d\n", mockConn2.data)
 	assert.True(t, mockConn1.data != mockConn2.data)
 
-	_, err = pool.Get()
+	_, err = cp.Get()
 	assert.True(t, err != nil)
 	println(err.Error())
-	assert.True(t, pool.IsPoolMaxSizeExceedError(err))
+	assert.True(t, ErrPoolMaxSizeExceed == err)
 
-	pool.GiveBack(conn1)
-	conn3, err := pool.Get()
+	cp.GiveBack(conn1)
+	conn3, err := cp.Get()
 	assert.True(t, err == nil)
 	mockConn3 := getMockConn(conn3)
 	fmt.Printf("mock conn3 data %d\n", mockConn3.data)
