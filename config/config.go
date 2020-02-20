@@ -2,13 +2,26 @@ package config
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 )
 
+// consul相关的配置信息
+type ConsulConfig struct {
+	Endpoint string `json:"endpoint,omitempty"` // consul agent的endpoint
+	Id string `json:"id,omitempty"` // 服务id
+	Name string `json:"name,omitempty"` // 服务名称
+	Tags []string `json:"tags,omitempty"` // 注册服务的标签
+	HealthCheckIntervalSeconds int `json:"health_checker_interval"` // consul服务心跳上报的间隔秒数
+
+	ConfigFileResolver string `json:"config_file_resolver,omitempty"` // 加载整个config文件的consul kv http路径
+
+	HealthCheckId string // 心跳检查的Check ID
+}
+
 // 本服务的配置信息
 type ServerConfig struct {
-	Resolver string `json:"resolver,omitempty"` // consul agent 配置
-	ConfigFileResolver string `json:"config_file_resolver,omitempty"` // 加载整个config文件的consul kv http路径
+	Resolver *ConsulConfig `json:"resolver,omitempty"` // consul agent配置
 
 	Endpoint string `json:"endpoint"`
 	Provider string `json:"provider,omitempty"` // 'websocket', 'http', etc. default is 'websocket'
@@ -54,6 +67,36 @@ type ServerConfig struct {
 			RpcRate int `json:"rpc_rate,omitempty"`
 		} `json:"rate_limit,omitempty"`
 	} `json:"plugins,omitempty"`
+}
+
+func (serverConfig ServerConfig) GetEndpointPort() *int {
+	endpoint := serverConfig.Endpoint
+	if len(endpoint) < 1 {
+		return nil
+	}
+	colonPos := strings.LastIndex(endpoint, ":")
+	if colonPos < 0 {
+		return nil
+	}
+	portStr := endpoint[colonPos+1:]
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return nil
+	}
+	return &port
+}
+
+func (serverConfig ServerConfig) GetEndpointHost() *string {
+	endpoint := serverConfig.Endpoint
+	if len(endpoint) < 1 {
+		return nil
+	}
+	colonPos := strings.LastIndex(endpoint, ":")
+	if colonPos < 0 {
+		return nil
+	}
+	hostname := endpoint[0:colonPos]
+	return &hostname
 }
 
 // 从json中加载配置

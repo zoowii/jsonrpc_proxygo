@@ -15,6 +15,13 @@ func main() {
 	flag.Parse()
 
 	configInfo, err := loader.LoadConfigFromConfigJsonFile(*configPath)
+	if err != nil {
+		panic(err)
+	}
+	err = loader.LoadConsulConfig(configInfo)
+	if err != nil {
+		panic(err)
+	}
 
 	loader.SetLoggerFromConfig(configInfo)
 	provider := loader.LoadProviderFromConfig(configInfo)
