@@ -10,9 +10,9 @@ import (
 var log = utils.GetLogger("load_balancer")
 
 type UpstreamItem struct {
-	Id int64
+	Id             int64
 	TargetEndpoint string
-	Weight int64
+	Weight         int64
 }
 
 var upstreamItemIdGen int64 = 0
@@ -22,15 +22,15 @@ func NewUpstreamItem(targetEndpoint string, weight int64) *UpstreamItem {
 		upstreamItemIdGen++
 	}()
 	return &UpstreamItem{
-		Id: upstreamItemIdGen,
+		Id:             upstreamItemIdGen,
 		TargetEndpoint: targetEndpoint,
-		Weight: weight,
+		Weight:         weight,
 	}
 }
 
 type LoadBalanceMiddleware struct {
 	plugin.MiddlewareAdapter
-	selector *WrrSelector
+	selector      *WrrSelector
 	UpstreamItems []*UpstreamItem
 }
 
@@ -60,6 +60,8 @@ func (middleware *LoadBalanceMiddleware) selectTargetByWeight() *UpstreamItem {
 	if !ok {
 		return nil
 	}
+
+	log.Debugf("[load-balancer]select target %s", selectedUpStreamItem.TargetEndpoint)
 	return selectedUpStreamItem
 }
 
@@ -73,7 +75,7 @@ func (middleware *LoadBalanceMiddleware) OnConnection(session *rpc.ConnectionSes
 		err = errors.New("can't select one upstream target")
 		return
 	}
-	log.Debugf("selected upstream target item id#%d endpoint: %s\n",selectedTargetItem.Id, selectedTargetItem.TargetEndpoint)
+	log.Debugf("selected upstream target item id#%d endpoint: %s\n", selectedTargetItem.Id, selectedTargetItem.TargetEndpoint)
 	session.SelectedUpstreamTarget = &selectedTargetItem.TargetEndpoint
 
 	return middleware.NextOnConnection(session)

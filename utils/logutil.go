@@ -1,16 +1,12 @@
 package utils
 
 import (
-	"bufio"
+	"github.com/natefinch/lumberjack"
 	"os"
 	"path"
 
 	log "github.com/sirupsen/logrus"
 )
-
-// TODO: log file rotate
-
-// TODO: add opentracing
 
 // Init init logger config
 func Init() {
@@ -27,13 +23,20 @@ func Init() {
 func SetLogLevel(level string) {
 	var logLevel log.Level
 	switch level {
-	case "TRACE": logLevel = log.TraceLevel
-	case "DEBUG": logLevel = log.DebugLevel
-	case "INFO": logLevel = log.InfoLevel
-	case "WARN": logLevel = log.WarnLevel
-	case "ERROR": logLevel = log.ErrorLevel
-	case "FATAL": logLevel = log.FatalLevel
-	case "PANIC": logLevel = log.PanicLevel
+	case "TRACE":
+		logLevel = log.TraceLevel
+	case "DEBUG":
+		logLevel = log.DebugLevel
+	case "INFO":
+		logLevel = log.InfoLevel
+	case "WARN":
+		logLevel = log.WarnLevel
+	case "ERROR":
+		logLevel = log.ErrorLevel
+	case "FATAL":
+		logLevel = log.FatalLevel
+	case "PANIC":
+		logLevel = log.PanicLevel
 	default:
 		logLevel = log.InfoLevel
 	}
@@ -53,20 +56,13 @@ func AddFileOutputToLog(filepath string) {
 	if !fileOrDirExists(baseDir) {
 		_ = os.MkdirAll(baseDir, os.ModePerm)
 	}
-	f, err := os.Create(filepath)
-	if err != nil {
-		println(err.Error())
-		panic("can't open log file " + filepath)
-		return
-	}
-	err = f.Sync()
-	if err != nil {
-		println(err.Error())
-		panic(err.Error())
-		return
-	}
-	fileWriter := bufio.NewWriter(f)
-	log.SetOutput(fileWriter)
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   filepath,
+		MaxSize:    500, // megabytes
+		MaxBackups: 3,
+		MaxAge:     30,    //days
+		Compress:   false, // disabled by default
+	})
 }
 
 // GetLogger get logger instance of module
