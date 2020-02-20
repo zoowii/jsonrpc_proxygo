@@ -2,12 +2,11 @@ package rpc
 
 import "encoding/json"
 
-
 const (
 	RPC_INTERNAL_ERROR = 10001
 
 	RPC_UPSTREAM_CONNECTION_CLOSED_ERROR = 50001
-	RPC_UPSTREAM_TIMEOUT_ERROR = 50002
+	RPC_UPSTREAM_TIMEOUT_ERROR           = 50002
 
 	RPC_DISABLED_RPC_METHOD = 60001
 
@@ -15,10 +14,10 @@ const (
 )
 
 type JSONRpcRequest struct {
-	Id uint64 `json:"id"`
-	JSONRpc string `json:"jsonrpc,omitempty"`
-	Method string `json:"method"`
-	Params interface{} `json:"params,omitempty"`
+	Id      uint64      `json:"id"`
+	JSONRpc string      `json:"jsonrpc,omitempty"`
+	Method  string      `json:"method"`
+	Params  interface{} `json:"params,omitempty"`
 }
 
 func DecodeJSONRPCRequest(message []byte) (req *JSONRpcRequest, err error) {
@@ -31,9 +30,9 @@ func DecodeJSONRPCRequest(message []byte) (req *JSONRpcRequest, err error) {
 }
 
 type JSONRpcResponseError struct {
-	Code int `json:"code"`
-	Message string `json:"message"`
-	Data interface{} `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 
 func NewJSONRpcResponseError(code int, message string, data interface{}) *JSONRpcResponseError {
@@ -45,10 +44,10 @@ func NewJSONRpcResponseError(code int, message string, data interface{}) *JSONRp
 }
 
 type JSONRpcResponse struct {
-	Id uint64 `json:"id"`
-	JSONRpc string `json:"jsonrpc,omitempty"`
-	Error *JSONRpcResponseError `json:"error,omitempty"`
-	Result interface{} `json:"result,omitempty"`
+	Id      uint64                `json:"id"`
+	JSONRpc string                `json:"jsonrpc,omitempty"`
+	Error   *JSONRpcResponseError `json:"error,omitempty"`
+	Result  interface{}           `json:"result,omitempty"`
 }
 
 func NewJSONRpcResponse(id uint64, result interface{}, err *JSONRpcResponseError) *JSONRpcResponse {
@@ -95,7 +94,7 @@ func DecodeJSONRPCResponse(message []byte) (req *JSONRpcResponse, err error) {
 type RpcRequestDispatchType int
 
 const (
-	RPC_REQUEST_CHANGE_TYPE_ADD_REQUEST RpcRequestDispatchType = 1 // add rpc request to dispatcher
+	RPC_REQUEST_CHANGE_TYPE_ADD_REQUEST  RpcRequestDispatchType = 1 // add rpc request to dispatcher
 	RPC_REQUEST_CHANGE_TYPE_ADD_RESPONSE RpcRequestDispatchType = 2 // add rpc response to dispatcher
 )
 

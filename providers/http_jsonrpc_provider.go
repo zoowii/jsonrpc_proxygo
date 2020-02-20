@@ -15,9 +15,9 @@ type HttpJsonRpcProviderOptions struct {
 }
 
 type HttpJsonRpcProvider struct {
-	endpoint string
-	path string
-	options *HttpJsonRpcProviderOptions
+	endpoint     string
+	path         string
+	options      *HttpJsonRpcProviderOptions
 	rpcProcessor RpcProviderProcessor
 }
 
@@ -27,10 +27,10 @@ func NewHttpJsonRpcProvider(endpoint string, path string, options *HttpJsonRpcPr
 		return nil
 	}
 	return &HttpJsonRpcProvider{
-		endpoint:      endpoint,
-		path: path,
+		endpoint:     endpoint,
+		path:         path,
 		rpcProcessor: nil,
-		options: options,
+		options:      options,
 	}
 }
 
@@ -55,11 +55,11 @@ func (provider *HttpJsonRpcProvider) asyncWatchMessagesToConnection(ctx context.
 		}()
 		for {
 			select {
-			case <- ctx.Done():
+			case <-ctx.Done():
 				return
-			case <- connSession.ConnectionDone:
+			case <-connSession.ConnectionDone:
 				return
-			case rpcDispatch := <- connSession.RpcRequestsDispatchChannel:
+			case rpcDispatch := <-connSession.RpcRequestsDispatchChannel:
 				if rpcDispatch == nil {
 					return
 				}
@@ -82,7 +82,7 @@ func (provider *HttpJsonRpcProvider) asyncWatchMessagesToConnection(ctx context.
 						delete(connSession.RpcRequestsMap, rpcRequestId)
 					}
 				}
-			case pack := <- connSession.RequestConnectionWriteChan:
+			case pack := <-connSession.RequestConnectionWriteChan:
 				if pack == nil {
 					return
 				}
@@ -92,7 +92,7 @@ func (provider *HttpJsonRpcProvider) asyncWatchMessagesToConnection(ctx context.
 					return
 				}
 				return
-			case <- time.After(time.Duration(provider.options.TimeoutSeconds) * time.Second):
+			case <-time.After(time.Duration(provider.options.TimeoutSeconds) * time.Second):
 				sendErrorResponse(w, errors.New("timeout"), rpc.RPC_RESPONSE_TIMEOUT_ERROR, 0)
 				return
 			}
@@ -162,7 +162,7 @@ func (provider *HttpJsonRpcProvider) serverHandler(w http.ResponseWriter, r *htt
 	provider.asyncWatchMessagesToConnection(ctx, connSession, w, r, done)
 
 	select {
-	case <- done:
+	case <-done:
 		break
 	}
 }
@@ -172,10 +172,9 @@ func (provider *HttpJsonRpcProvider) ListenAndServe() (err error) {
 		err = errors.New("please set provider.rpcProcessor before ListenAndServe")
 		return
 	}
-	wrappedHandler := func (w http.ResponseWriter, r *http.Request) {
+	wrappedHandler := func(w http.ResponseWriter, r *http.Request) {
 		provider.serverHandler(w, r)
 	}
 	http.HandleFunc(provider.path, wrappedHandler)
 	return http.ListenAndServe(provider.endpoint, nil)
 }
-

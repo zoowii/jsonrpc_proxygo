@@ -5,9 +5,9 @@ import "errors"
 // WeightedRound-Robin algorithm implementation
 
 type wrrNode struct {
-	weight int64
+	weight        int64
 	currentWeight int64
-	value interface{}
+	value         interface{}
 }
 
 type WrrSelector struct {

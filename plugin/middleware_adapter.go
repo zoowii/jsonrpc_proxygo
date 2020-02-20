@@ -14,7 +14,6 @@ func (adapter *MiddlewareAdapter) SetNextMiddleware(next Middleware) {
 	adapter.nextMiddleware = next
 }
 
-
 func (middleware *MiddlewareAdapter) NextOnStart() (err error) {
 	next := middleware.NextMiddleware()
 	if next != nil {

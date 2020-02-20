@@ -54,4 +54,3 @@ func LoadBeforeCachePluginConfig(chain *plugin.MiddlewareChain, configInfo *conf
 		}
 	}
 }
-

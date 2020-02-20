@@ -25,7 +25,7 @@ func (item Item) Expired() bool {
 }
 
 const (
-	NoExpiration time.Duration = -1
+	NoExpiration      time.Duration = -1
 	DefaultExpiration time.Duration = 0
 )
 
@@ -82,7 +82,6 @@ func (c *MemoryCache) set(k string, x interface{}, d time.Duration) {
 func (c *MemoryCache) SetDefault(k string, x interface{}) {
 	c.Set(k, x, DefaultExpiration)
 }
-
 
 // Set a new value for the cache key only if it already exists, and the existing
 // item hasn't expired. Returns an error otherwise.

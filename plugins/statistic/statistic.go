@@ -19,13 +19,13 @@ var log = utils.GetLogger("statistic")
 
 type StatisticMiddleware struct {
 	plugin.MiddlewareAdapter
-	rpcRequestsReceived chan *rpc.JSONRpcRequestSession
+	rpcRequestsReceived  chan *rpc.JSONRpcRequestSession
 	rpcResponsesReceived chan *rpc.JSONRpcRequestSession
 
 	globalRpcMethodsCount *utils.MemoryCache
 
-	hourlyLock sync.RWMutex
-	hourlyStartTime time.Time
+	hourlyLock            sync.RWMutex
+	hourlyStartTime       time.Time
 	hourlyRpcMethodsCount *utils.MemoryCache
 }
 
@@ -33,10 +33,10 @@ func NewStatisticMiddleware() *StatisticMiddleware {
 	const maxRpcChannelSize = 10000
 
 	return &StatisticMiddleware{
-		rpcRequestsReceived: make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
-		rpcResponsesReceived: make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
+		rpcRequestsReceived:   make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
+		rpcResponsesReceived:  make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
 		globalRpcMethodsCount: utils.NewMemoryCache(),
-		hourlyStartTime: time.Now(),
+		hourlyStartTime:       time.Now(),
 		hourlyRpcMethodsCount: utils.NewMemoryCache(),
 	}
 }
@@ -60,9 +60,9 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 		dumpTick := time.Tick(60 * time.Second)
 		for {
 			select {
-			case <- ctx.Done():
+			case <-ctx.Done():
 				return
-			case <- dumpTick:
+			case <-dumpTick:
 				if !dumpIntervalOpened {
 					continue
 				}
@@ -80,7 +80,7 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 				}
 				log.Infof("globalRpcMethodsCount: %s", string(globalStatJson))
 				log.Infof("hourlyRpcMethodsCount: %s", string(hourlyStatJson))
-			case reqSession := <- middleware.rpcRequestsReceived:
+			case reqSession := <-middleware.rpcRequestsReceived:
 				methodNameForStatistic := getMethodNameForRpcStatistic(reqSession)
 
 				// update global rpc methods called count
@@ -96,7 +96,7 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 					middleware.hourlyLock.Lock()
 					defer middleware.hourlyLock.Unlock()
 					now := time.Now()
-					if now.Sub(middleware.hourlyStartTime) > 1 * time.Hour {
+					if now.Sub(middleware.hourlyStartTime) > 1*time.Hour {
 						middleware.hourlyStartTime = now
 						middleware.hourlyRpcMethodsCount.Flush() // delete all items
 					}
@@ -107,7 +107,7 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 						middleware.hourlyRpcMethodsCount.SetDefault(methodNameForStatistic, 1)
 					}
 				}()
-			case resSession := <- middleware.rpcResponsesReceived:
+			case resSession := <-middleware.rpcResponsesReceived:
 				_ = resSession // TODO: record every rpc response-request time
 			default:
 				time.Sleep(50 * time.Millisecond)

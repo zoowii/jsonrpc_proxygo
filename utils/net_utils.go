@@ -15,8 +15,10 @@ func IsClosedOrGoingAwayCloseError(err error) bool {
 	closeErr, ok := err.(*websocket.CloseError)
 	if ok {
 		switch closeErr.Code {
-		case websocket.CloseNormalClosure: return true
-		case websocket.CloseGoingAway: return true
+		case websocket.CloseNormalClosure:
+			return true
+		case websocket.CloseGoingAway:
+			return true
 		default:
 			return false
 		}

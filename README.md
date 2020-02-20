@@ -34,11 +34,10 @@ go build
       "id": "jsonrpc_proxygo_service_1",
       "name": "jsonrpc_proxygo",
       "endpoint": "consul://127.0.0.1:8500",
-      "config_file_resolver": "consul://127.0.0.1:8500/v1/kv/jsonrpc_proxy.config",
+      "config_file_resolver": "consul://127.0.0.1:8500/v1/kv/jsonrpc_proxygo/dev/config",
       "tags": ["jsonrpc_proxy", "web", "dev"],
       "health_checker_interval": 30
     },
-  "config_file_resolver": "consul://127.0.0.1:8500/v1/kv/jsonrpc_proxy.config",
   "endpoint": "127.0.0.1:5000",
   "provider": "websocket",
   "log": {

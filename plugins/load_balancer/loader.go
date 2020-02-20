@@ -26,4 +26,3 @@ func LoadLoadBalancePluginConfig(chain *plugin.MiddlewareChain, configInfo *conf
 	}
 	chain.InsertHead(loadBalanceMiddleware)
 }
-

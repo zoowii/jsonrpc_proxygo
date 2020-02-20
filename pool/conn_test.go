@@ -16,12 +16,12 @@ func (conn *mockConn) Close() error {
 	return nil
 }
 
-func mockConnFactory()  (result Poolable, err error) {
+func mockConnFactory() (result Poolable, err error) {
 	id := mockConnIdGen
 	mockConnIdGen++
 	fmt.Printf("mock conn #%d created\n", id)
 	return &mockConn{
-		data:id,
+		data: id,
 	}, nil
 }
 

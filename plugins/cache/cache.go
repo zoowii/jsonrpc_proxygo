@@ -12,13 +12,13 @@ import (
 var log = utils.GetLogger("cache")
 
 type CacheConfigItem struct {
-	MethodName string
+	MethodName    string
 	CacheDuration time.Duration
 }
 
 type CacheMiddleware struct {
 	plugin.MiddlewareAdapter
-	cacheConfigItems []*CacheConfigItem
+	cacheConfigItems    []*CacheConfigItem
 	cacheConfigItemsMap map[string]*CacheConfigItem // methodNameForCache => *CacheConfigItem
 
 	rpcCache *utils.MemoryCache
@@ -27,9 +27,9 @@ type CacheMiddleware struct {
 func NewCacheMiddleware(cacheConfigItems ...*CacheConfigItem) *CacheMiddleware {
 	cacheConfigItemsMap := make(map[string]*CacheConfigItem)
 	result := &CacheMiddleware{
-		cacheConfigItems: nil,
+		cacheConfigItems:    nil,
 		cacheConfigItemsMap: cacheConfigItemsMap,
-		rpcCache: utils.NewMemoryCache(),
+		rpcCache:            utils.NewMemoryCache(),
 	}
 	for _, item := range cacheConfigItems {
 		_ = result.AddCacheConfigItem(item)
@@ -62,7 +62,7 @@ func (middleware *CacheMiddleware) OnConnectionClosed(session *rpc.ConnectionSes
 }
 
 func (middleware *CacheMiddleware) OnWebSocketFrame(session *rpc.JSONRpcRequestSession,
-	messageType int, message []byte) (error) {
+	messageType int, message []byte) error {
 	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
 
@@ -78,7 +78,7 @@ func fetchRpcRequestParams(rpcRequest *rpc.JSONRpcRequest, fetchParamsCount int)
 		fetchParamsCount = len(paramsArray)
 	}
 	result = make([]interface{}, fetchParamsCount)
-	for i:=0;i<fetchParamsCount;i++ {
+	for i := 0; i < fetchParamsCount; i++ {
 		result[i] = paramsArray[i]
 	}
 	return
@@ -151,7 +151,7 @@ func (middleware *CacheMiddleware) cacheKeyForRpcMethod(rpcMethodName string, rp
 }
 
 type rpcResponseCacheItem struct {
-	response *rpc.JSONRpcResponse
+	response      *rpc.JSONRpcResponse
 	responseBytes []byte
 }
 
@@ -171,7 +171,7 @@ func (middleware *CacheMiddleware) OnRpcResponse(session *rpc.JSONRpcRequestSess
 		return
 	}
 	middleware.rpcCache.Set(cacheKey, &rpcResponseCacheItem{
-		response: rpcRes,
+		response:      rpcRes,
 		responseBytes: rpcResBytes,
 	}, cacheConfigItem.CacheDuration)
 	log.Debugf("rpc method-for-cache %s cached\n", methodNameForCache)

@@ -43,21 +43,21 @@ type ConnPool interface {
 type UpstreamConnFactory func() (Poolable, error)
 
 type connPool struct {
-	poolDataLock sync.RWMutex
-	queueSize int32 // count of all connections managed by the pool now
-	max           int
+	poolDataLock       sync.RWMutex
+	queueSize          int32 // count of all connections managed by the pool now
+	max                int
 	initSize           int
 	availableInstances chan Poolable
-	factory       UpstreamConnFactory
+	factory            UpstreamConnFactory
 }
 
 func NewConnPool(max, initSize int, factory UpstreamConnFactory) (pool *connPool, err error) {
 	pool = &connPool{
-		queueSize: 0,
-		max:       max,
-		initSize:       initSize,
-		availableInstances: make(chan Poolable, max * 10),
-		factory:   factory,
+		queueSize:          0,
+		max:                max,
+		initSize:           initSize,
+		availableInstances: make(chan Poolable, max*10),
+		factory:            factory,
 	}
 	if initSize > 0 {
 		err = pool.createConnections(initSize)
@@ -71,7 +71,7 @@ func NewConnPool(max, initSize int, factory UpstreamConnFactory) (pool *connPool
 func (pool *connPool) atomicAddQueueSize(delta int32) {
 	changed := false
 	for !changed {
-		if delta < 0 && pool.queueSize<=0 {
+		if delta < 0 && pool.queueSize <= 0 {
 			return
 		}
 		changed = atomic.CompareAndSwapInt32(&pool.queueSize, pool.queueSize, pool.queueSize+delta)
@@ -79,7 +79,7 @@ func (pool *connPool) atomicAddQueueSize(delta int32) {
 }
 
 func (pool *connPool) createConnections(count int) (err error) {
-	for i:=0;i<count;i++ {
+	for i := 0; i < count; i++ {
 		conn, createErr := pool.factory()
 		if createErr != nil {
 			err = createErr
@@ -93,7 +93,7 @@ func (pool *connPool) createConnections(count int) (err error) {
 
 var (
 	ErrPoolMaxSizeExceed = errors.New("pool max size exceed")
-	ErrAcquireTimeout = errors.New("pool acquire timeout")
+	ErrAcquireTimeout    = errors.New("pool acquire timeout")
 )
 
 func (pool *connPool) wrapConn(conn Poolable) *PoolableProxy {
@@ -113,7 +113,7 @@ func (pool *connPool) GetOrWait(maxWaitTime time.Duration) (result *PoolableProx
 		}
 		result = pool.wrapConn(conn)
 		return
-	case <- time.After(maxWaitTime):
+	case <-time.After(maxWaitTime):
 		err = ErrAcquireTimeout
 		return
 	}
@@ -121,7 +121,7 @@ func (pool *connPool) GetOrWait(maxWaitTime time.Duration) (result *PoolableProx
 
 func (pool *connPool) Get() (result *PoolableProxy, err error) {
 	select {
-	case conn := <- pool.availableInstances:
+	case conn := <-pool.availableInstances:
 		if conn == nil {
 			result = nil
 			err = os.ErrClosed

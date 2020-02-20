@@ -11,7 +11,7 @@ func TestWrrNext(t *testing.T) {
 	selector.AddNode(2, 2)
 	tryCount := 3
 	selected := make([]int, tryCount)
-	for i:=0;i<len(selected);i++ {
+	for i := 0; i < len(selected); i++ {
 		item, err := selector.Next()
 		assert.True(t, err == nil)
 		itemValue, ok := item.(int)

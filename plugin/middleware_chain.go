@@ -7,7 +7,7 @@ type MiddlewareChain struct {
 }
 
 func NewMiddlewareChain() *MiddlewareChain {
-	return &MiddlewareChain{Middlewares:nil}
+	return &MiddlewareChain{Middlewares: nil}
 }
 
 func (chain *MiddlewareChain) Append(middleware Middleware) *MiddlewareChain {
@@ -17,13 +17,13 @@ func (chain *MiddlewareChain) Append(middleware Middleware) *MiddlewareChain {
 
 func (chain *MiddlewareChain) InsertHead(middlewares ...Middleware) *MiddlewareChain {
 	addCount := len(middlewares)
-	if addCount>0 {
+	if addCount > 0 {
 		count := len(chain.Middlewares)
-		items := make([]Middleware, count + addCount)
-		for i:=0;i<addCount;i++ {
-			items[i]=middlewares[i]
+		items := make([]Middleware, count+addCount)
+		for i := 0; i < addCount; i++ {
+			items[i] = middlewares[i]
 		}
-		for i:=0;i<count;i++ {
+		for i := 0; i < count; i++ {
 			items[i+addCount] = chain.Middlewares[i]
 		}
 		chain.Middlewares = items
@@ -32,9 +32,9 @@ func (chain *MiddlewareChain) InsertHead(middlewares ...Middleware) *MiddlewareC
 }
 
 func (chain *MiddlewareChain) OnStart() (err error) {
-	for i:=0;i<len(chain.Middlewares);i++ {
+	for i := 0; i < len(chain.Middlewares); i++ {
 		m := chain.Middlewares[i]
-		if(i > 0) {
+		if i > 0 {
 			chain.Middlewares[i-1].SetNextMiddleware(m)
 		}
 		err = m.OnStart()
@@ -107,4 +107,3 @@ func (chain *MiddlewareChain) ProcessJSONRpcRequest(session *rpc.JSONRpcRequestS
 		return first.ProcessRpcRequest(session)
 	}
 }
-

@@ -15,7 +15,7 @@ var log = utils.GetLogger("server")
  */
 type ProxyServer struct {
 	MiddlewareChain *plugin.MiddlewareChain
-	Provider providers.RpcProvider
+	Provider        providers.RpcProvider
 }
 
 /**
@@ -24,7 +24,7 @@ type ProxyServer struct {
 func NewProxyServer(provider providers.RpcProvider) *ProxyServer {
 	server := &ProxyServer{
 		MiddlewareChain: plugin.NewMiddlewareChain(),
-		Provider: provider,
+		Provider:        provider,
 	}
 	return server
 }
@@ -90,4 +90,4 @@ func (server *ProxyServer) Start() {
 	}
 	server.Provider.SetRpcProcessor(server)
 	log.Fatal(server.Provider.ListenAndServe())
-} 
+}

@@ -31,9 +31,9 @@ type state struct {
 
 type tokenBucketLimiter struct {
 	clock Clock
-	rate uint64
-	max       uint64
-	unit      uint64
+	rate  uint64
+	max   uint64
+	unit  uint64
 	state unsafe.Pointer
 }
 
@@ -65,9 +65,9 @@ func NewTokenBucketLimiter(rate int, per time.Duration) Limiter {
 
 	ul := &tokenBucketLimiter{
 		clock: clock,
-		rate:      uint64(rate),
-		max:       uint64(rate) * unit,
-		unit:      unit,
+		rate:  uint64(rate),
+		max:   uint64(rate) * unit,
+		unit:  unit,
 	}
 	atomic.StorePointer(&ul.state, unsafe.Pointer(&initState))
 	return ul
@@ -104,7 +104,7 @@ func (limiter *tokenBucketLimiter) Take() bool {
 
 		rate := atomic.LoadUint64(&limiter.rate)
 		// after passed time, there are more allowance
-		current := newState.allowance + passed * rate
+		current := newState.allowance + passed*rate
 		newState.allowance = current
 
 		if max := atomic.LoadUint64(&limiter.max); current > max {

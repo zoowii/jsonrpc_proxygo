@@ -15,13 +15,13 @@ var log = utils.GetLogger("upstream")
 
 type WsUpstreamMiddleware struct {
 	plugin.MiddlewareAdapter
-	UpstreamTimeout time.Duration
+	UpstreamTimeout       time.Duration
 	DefaultTargetEndpoint string
 }
 
 func NewWsUpstreamMiddleware(defaultTargetEndpoint string) *WsUpstreamMiddleware {
 	return &WsUpstreamMiddleware{
-		UpstreamTimeout: 30 * time.Second,
+		UpstreamTimeout:       30 * time.Second,
 		DefaultTargetEndpoint: defaultTargetEndpoint,
 	}
 }
@@ -35,11 +35,11 @@ func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponseAndToDisp
 	go func() {
 		for {
 			select {
-			case <- session.UpstreamTargetConnectionDone:
+			case <-session.UpstreamTargetConnectionDone:
 				return
-			case <- session.ConnectionDone:
+			case <-session.ConnectionDone:
 				return
-			case req := <- session.UpstreamRpcRequestsChan:
+			case req := <-session.UpstreamRpcRequestsChan:
 				if req == nil {
 					return
 				}
@@ -274,15 +274,15 @@ func (middleware *WsUpstreamMiddleware) ProcessRpcRequest(session *rpc.JSONRpcRe
 
 	var rpcRes *rpc.JSONRpcResponse
 	select {
-	case <- time.After(middleware.UpstreamTimeout):
+	case <-time.After(middleware.UpstreamTimeout):
 		rpcRes = rpc.NewJSONRpcResponse(rpcRequestId, nil,
 			rpc.NewJSONRpcResponseError(rpc.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR,
 				"upstream target connection closed", nil))
-	case <- session.Conn.UpstreamTargetConnectionDone:
+	case <-session.Conn.UpstreamTargetConnectionDone:
 		rpcRes = rpc.NewJSONRpcResponse(rpcRequestId, nil,
 			rpc.NewJSONRpcResponseError(rpc.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR,
 				"upstream target connection closed", nil))
-	case rpcRes = <- requestChan:
+	case rpcRes = <-requestChan:
 		// do nothing, just receive rpcRes
 	}
 	session.Response = rpcRes

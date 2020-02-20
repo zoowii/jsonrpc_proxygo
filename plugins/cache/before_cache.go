@@ -50,7 +50,7 @@ func (middleware *BeforeCacheMiddleware) OnConnectionClosed(session *rpc.Connect
 }
 
 func (middleware *BeforeCacheMiddleware) OnWebSocketFrame(session *rpc.JSONRpcRequestSession,
-	messageType int, message []byte) (error) {
+	messageType int, message []byte) error {
 	return middleware.NextOnWebSocketFrame(session, messageType, message)
 }
 
@@ -116,10 +116,10 @@ func (middleware *BeforeCacheMiddleware) OnRpcRequest(session *rpc.JSONRpcReques
 	// log.Debugf("[before-cache] methodNameForCache %s set\n", methodNameForCache)
 	return
 }
-func (middleware *BeforeCacheMiddleware) OnRpcResponse(session *rpc.JSONRpcRequestSession) (error) {
+func (middleware *BeforeCacheMiddleware) OnRpcResponse(session *rpc.JSONRpcRequestSession) error {
 	return middleware.NextOnJSONRpcResponse(session)
 }
 
-func (middleware *BeforeCacheMiddleware) ProcessRpcRequest(session *rpc.JSONRpcRequestSession) (error) {
+func (middleware *BeforeCacheMiddleware) ProcessRpcRequest(session *rpc.JSONRpcRequestSession) error {
 	return middleware.NextProcessJSONRpcRequest(session)
 }

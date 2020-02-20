@@ -3,8 +3,12 @@
     "id": "jsonrpc_proxygo_service_1",
     "name": "jsonrpc_proxygo",
     "endpoint": "consul://127.0.0.1:8500",
-    "config_file_resolver": "consul://127.0.0.1:8500/v1/kv/jsonrpc_proxy.config",
-    "tags": ["jsonrpc_proxy", "web", "dev"],
+    "config_file_resolver": "consul://127.0.0.1:8500/v1/kv/jsonrpc_proxygo/dev/config",
+    "tags": [
+      "jsonrpc_proxy",
+      "web",
+      "dev"
+    ],
     "health_checker_interval": 30
   },
   "endpoint": "127.0.0.1:5000",
@@ -17,19 +21,34 @@
     "upstream": {
       "upstream_endpoints": [
         {
-          "url": "ws://127.0.0.1:3000", "weight": 1
+          "url": "ws://127.0.0.1:3000",
+          "weight": 1
         },
         {
-          "url": "wss://127.0.0.1:4000", "weight": 2
+          "url": "wss://127.0.0.1:4000",
+          "weight": 2
         }
       ]
     },
     "caches": [
-      { "name": "dummyMethod", "expire_seconds": 5 },
-      { "name": "call", "paramsForCache": [2, "getSomeInfoMethod"],  "expire_seconds": 5 }
+      {
+        "name": "dummyMethod",
+        "expire_seconds": 5
+      },
+      {
+        "name": "call",
+        "paramsForCache": [
+          2,
+          "getSomeInfoMethod"
+        ],
+        "expire_seconds": 5
+      }
     ],
     "before_cache_configs": [
-      {"method": "call", "fetch_cache_key_from_params_count": 2}
+      {
+        "method": "call",
+        "fetch_cache_key_from_params_count": 2
+      }
     ],
     "statistic": {
       "start": true

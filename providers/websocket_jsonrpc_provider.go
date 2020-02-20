@@ -17,16 +17,16 @@ var upgrader = websocket.Upgrader{
 }
 
 type WebSocketJsonRpcProvider struct {
-	endpoint string
+	endpoint      string
 	websocketPath string
-	rpcProcessor RpcProviderProcessor
+	rpcProcessor  RpcProviderProcessor
 }
 
 func NewWebSocketJsonRpcProvider(endpoint string, websocketPath string) *WebSocketJsonRpcProvider {
 	return &WebSocketJsonRpcProvider{
 		endpoint:      endpoint,
 		websocketPath: websocketPath,
-		rpcProcessor: nil,
+		rpcProcessor:  nil,
 	}
 }
 
@@ -38,11 +38,11 @@ func (provider *WebSocketJsonRpcProvider) asyncWatchMessagesToConnection(ctx con
 	go func() {
 		for {
 			select {
-			case <- ctx.Done():
+			case <-ctx.Done():
 				return
-			case <- connSession.ConnectionDone:
+			case <-connSession.ConnectionDone:
 				return
-			case rpcDispatch := <- connSession.RpcRequestsDispatchChannel:
+			case rpcDispatch := <-connSession.RpcRequestsDispatchChannel:
 				if rpcDispatch == nil {
 					return
 				}
@@ -65,7 +65,7 @@ func (provider *WebSocketJsonRpcProvider) asyncWatchMessagesToConnection(ctx con
 						delete(connSession.RpcRequestsMap, rpcRequestId)
 					}
 				}
-			case pack := <- connSession.RequestConnectionWriteChan:
+			case pack := <-connSession.RequestConnectionWriteChan:
 				if pack == nil {
 					return
 				}
@@ -147,7 +147,7 @@ func (provider *WebSocketJsonRpcProvider) ListenAndServe() (err error) {
 		err = errors.New("please set provider.rpcProcessor before ListenAndServe")
 		return
 	}
-	wrappedHandler := func (w http.ResponseWriter, r *http.Request) {
+	wrappedHandler := func(w http.ResponseWriter, r *http.Request) {
 		provider.serverHandler(w, r)
 	}
 	http.HandleFunc(provider.websocketPath, wrappedHandler)

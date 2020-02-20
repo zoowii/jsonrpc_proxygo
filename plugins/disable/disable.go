@@ -10,7 +10,7 @@ import (
  */
 type DisableMiddleware struct {
 	plugin.MiddlewareAdapter
-	next plugin.Middleware
+	next                plugin.Middleware
 	rpcMethodsBlacklist map[string]interface{}
 }
 
