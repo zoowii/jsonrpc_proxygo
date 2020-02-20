@@ -9,7 +9,7 @@ import (
 func LoadLoadBalancePluginConfig(chain *plugin.MiddlewareChain, configInfo *config.ServerConfig) {
 	upstreamPluginConf := configInfo.Plugins.Upstream
 	if len(upstreamPluginConf.TargetEndpoints) <= 1 {
-		return
+		return // 初始至少需要提供一个upstream target
 	}
 	loadBalanceMiddleware := NewLoadBalanceMiddleware()
 	for _, itemConf := range upstreamPluginConf.TargetEndpoints {

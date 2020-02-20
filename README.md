@@ -30,6 +30,8 @@ go build
 ```
 // example of server.json
 {
+  "resolver": "consul://127.0.0.1:8500",
+  "config_file_resolver": "consul://127.0.0.1:8500/v1/kv/jsonrpc_proxy.config",
   "endpoint": "127.0.0.1:5000",
   "provider": "websocket",
   "log": {

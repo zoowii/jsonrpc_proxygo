@@ -26,6 +26,33 @@ func LoadConfigFromConfigJsonFile(configFilePath string) (configInfo *config.Ser
 	if err != nil {
 		return
 	}
+	if config.IsConsulResolver(configInfo.Resolver) {
+		configFileResolver := configInfo.ConfigFileResolver
+		if config.IsConsulResolver(configFileResolver) {
+			log.Infof("loading config file from consul ", configInfo.ConfigFileResolver)
+			// 需要尝试从consul kv http api加载配置文件
+			var consulErr error
+			configPair, consulErr := utils.ConsulGetKV(configFileResolver)
+			if consulErr != nil {
+				err = consulErr
+				return
+			}
+			configValue := configPair.Value
+			log.Infof("config value from consul: %s", configValue)
+
+			newConfigInfo := &config.ServerConfig{}
+			err = config.UnmarshalServerConfigFromJson([]byte(configValue), newConfigInfo)
+			if err != nil {
+				return
+			}
+			// resolver和config_file_resolver等属性只从本地读取，所以要修改从网络中获取的配置文件对象
+			newConfigInfo.Resolver = configInfo.Resolver
+			newConfigInfo.ConfigFileResolver = configInfo.ConfigFileResolver
+			*configInfo = *newConfigInfo
+			log.Infof("loaded new config from consul %s", configValue)
+		}
+		// TODO: 把本服务注册到consul agent
+	}
 	return
 }
 

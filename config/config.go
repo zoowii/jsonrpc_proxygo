@@ -2,9 +2,14 @@ package config
 
 import (
 	"encoding/json"
+	"strings"
 )
 
+// 本服务的配置信息
 type ServerConfig struct {
+	Resolver string `json:"resolver,omitempty"` // consul agent 配置
+	ConfigFileResolver string `json:"config_file_resolver,omitempty"` // 加载整个config文件的consul kv http路径
+
 	Endpoint string `json:"endpoint"`
 	Provider string `json:"provider,omitempty"` // 'websocket', 'http', etc. default is 'websocket'
 
@@ -51,6 +56,12 @@ type ServerConfig struct {
 	} `json:"plugins,omitempty"`
 }
 
+// 从json中加载配置
 func UnmarshalServerConfigFromJson(bytes []byte, config *ServerConfig) error {
 	return json.Unmarshal(bytes, config)
+}
+
+// 判断是否是consul resolver url的格式
+func IsConsulResolver(resolver string) bool {
+	return len(resolver) > 0 && strings.Index(resolver, "consul://") == 0
 }

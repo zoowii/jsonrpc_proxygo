@@ -9,5 +9,5 @@ TODO
 * support grpc/ipc/http-jsonrpc services as upstream backend
 * better statistic middleware and show metrics UI
 * opentracing
-* load upstreams from consul
+* refresh upstreams list from consul resolver regularly
 
