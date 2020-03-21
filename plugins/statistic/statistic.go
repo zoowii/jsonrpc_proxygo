@@ -8,6 +8,7 @@ package statistic
 
 import (
 	"context"
+	"github.com/zoowii/jsonrpc_proxygo/config"
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
@@ -27,10 +28,25 @@ type StatisticMiddleware struct {
 	hourlyLock            sync.RWMutex
 	hourlyStartTime       time.Time
 	hourlyRpcMethodsCount *utils.MemoryCache
+
+	metricOptions *MetricOptions
+	store MetricStore
 }
 
-func NewStatisticMiddleware() *StatisticMiddleware {
+func NewStatisticMiddleware(options ...config.Option) *StatisticMiddleware {
 	const maxRpcChannelSize = 10000
+
+	mOptions := &MetricOptions{}
+	for _, o := range options {
+		o(mOptions)
+	}
+
+	var store MetricStore
+	if mOptions.store != nil {
+		store = mOptions.store
+	} else {
+		store = newDefaultMetricStore()
+	}
 
 	return &StatisticMiddleware{
 		rpcRequestsReceived:   make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
@@ -38,6 +54,8 @@ func NewStatisticMiddleware() *StatisticMiddleware {
 		globalRpcMethodsCount: utils.NewMemoryCache(),
 		hourlyStartTime:       time.Now(),
 		hourlyRpcMethodsCount: utils.NewMemoryCache(),
+		metricOptions:         mOptions,
+		store:                 store,
 	}
 }
 
@@ -56,7 +74,9 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 	go func() {
 		ctx := context.Background()
 
-		dumpIntervalOpened := false
+		store := middleware.store
+
+		dumpIntervalOpened := middleware.metricOptions.dumpIntervalOpened
 		dumpTick := time.Tick(60 * time.Second)
 		for {
 			select {
@@ -107,8 +127,14 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 						middleware.hourlyRpcMethodsCount.SetDefault(methodNameForStatistic, 1)
 					}
 				}()
+
+
+				// TODO: 根据策略随机采样或者全部记录请求和返回的数据
+				includeDebug := true
+				store.LogRequest(ctx, reqSession, includeDebug)
 			case resSession := <-middleware.rpcResponsesReceived:
-				_ = resSession // TODO: record every rpc response-request time
+				includeDebug := true
+				store.logResponse(ctx, resSession, includeDebug)
 			default:
 				time.Sleep(50 * time.Millisecond)
 			}

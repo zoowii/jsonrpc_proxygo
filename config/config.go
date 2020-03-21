@@ -8,6 +8,7 @@ import (
 
 // consul相关的配置信息
 type ConsulConfig struct {
+	Start                       bool     `json:"start,omitempty"`          // 是否启用此配置
 	Endpoint                   string   `json:"endpoint,omitempty"`      // consul agent的endpoint
 	Id                         string   `json:"id,omitempty"`            // 服务id
 	Name                       string   `json:"name,omitempty"`          // 服务名称
@@ -54,6 +55,11 @@ type ServerConfig struct {
 
 		Statistic struct {
 			Start bool `json:"start,omitempty"`
+			Store struct {
+				Type               string `json:"type,omitempty"`
+				DbUrl              string `json:"dbUrl,omitempty"`
+				DumpIntervalOpened bool   `json:"dumpIntervalOpened,omitempty"`
+			} `json:"store,omitempty"`
 		} `json:"statistic,omitempty"`
 
 		Disable struct {

@@ -39,7 +39,7 @@ func uploadConsulServiceHealthCheck(consulConfig *config.ConsulConfig, wholeConf
 }
 
 func LoadConsulConfig(configInfo *config.ServerConfig) (err error) {
-	if configInfo.Resolver != nil {
+	if configInfo.Resolver != nil && configInfo.Resolver.Start {
 		consulResolver := configInfo.Resolver
 		configFileResolver := consulResolver.ConfigFileResolver
 		if config.IsConsulResolver(configFileResolver) {

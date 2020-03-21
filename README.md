@@ -31,6 +31,7 @@ go build
 // example of server.json
 {
   "resolver": {
+      "start": false,
       "id": "jsonrpc_proxygo_service_1",
       "name": "jsonrpc_proxygo",
       "endpoint": "consul://127.0.0.1:8500",
@@ -63,7 +64,12 @@ go build
       {"method": "call", "fetch_cache_key_from_params_count": 2}
     ],
     "statistic": {
-      "start": true
+      "start": true,
+      "store": {
+        "type": "db",
+        "dbUrl": "root:123456@tcp(127.0.0.1:3306)/jsonrpc_proxygo",
+        "dumpIntervalOpened": true
+      }
     },
     "disable": {
       "start": true,

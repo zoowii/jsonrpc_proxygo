@@ -1,5 +1,6 @@
 {
   "resolver": {
+    "start": true,
     "id": "jsonrpc_proxygo_service_1",
     "name": "jsonrpc_proxygo",
     "endpoint": "consul://127.0.0.1:8500",
@@ -51,7 +52,12 @@
       }
     ],
     "statistic": {
-      "start": true
+      "start": true,
+      "store": {
+        "type": "db",
+        "dbUrl": "root:123456@tcp(127.0.0.1:3306)/jsonrpc_proxygo",
+        "dumpIntervalOpened": true
+      }
     },
     "disable": {
       "start": true,
