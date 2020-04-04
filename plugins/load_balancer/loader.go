@@ -8,11 +8,15 @@ import (
 
 func LoadLoadBalancePluginConfig(chain *plugin.MiddlewareChain, configInfo *config.ServerConfig) {
 	upstreamPluginConf := configInfo.Plugins.Upstream
-	if len(upstreamPluginConf.TargetEndpoints) <= 1 {
+	targetEndpoints := upstreamPluginConf.TargetEndpoints
+	if len(targetEndpoints) <= 1 {
 		return // 初始至少需要提供一个upstream target
 	}
 	loadBalanceMiddleware := NewLoadBalanceMiddleware()
-	for _, itemConf := range upstreamPluginConf.TargetEndpoints {
+	for _, itemConf := range targetEndpoints {
+		if itemConf.Ignore {
+			continue
+		}
 		if itemConf.Weight <= 0 {
 			log.Fatalln("invalid upstream weight", itemConf.Weight)
 			return

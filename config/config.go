@@ -8,7 +8,7 @@ import (
 
 // consul相关的配置信息
 type ConsulConfig struct {
-	Start                       bool     `json:"start,omitempty"`          // 是否启用此配置
+	Start                      bool     `json:"start,omitempty"`         // 是否启用此配置
 	Endpoint                   string   `json:"endpoint,omitempty"`      // consul agent的endpoint
 	Id                         string   `json:"id,omitempty"`            // 服务id
 	Name                       string   `json:"name,omitempty"`          // 服务名称
@@ -38,8 +38,14 @@ type ServerConfig struct {
 			TargetEndpoints []struct {
 				Url    string `json:"url"`
 				Weight int64  `json:"weight"`
+				Ignore bool   `json:"ignore,omitempty"` // whether temporarily close a endpoint
 			} `json:"upstream_endpoints"`
 		} `json:"upstream,omitempty"`
+
+		// http upstream plugin config
+		HttpUpstream struct {
+			Start bool `json:"start,omitempty"`
+		} `json:"http_upstream,omitempty"`
 
 		// cache plugin config
 		Caches []struct {

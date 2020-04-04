@@ -131,6 +131,7 @@ func (p *websocketServiceConnPool) ReleaseStatefulConn(conn ServiceConn) (err er
 	if err != nil {
 		return
 	}
+	// TODO: 有状态连接不仅要归还还要关闭连接，因为不能被复用了
 	err = connPool.GiveBack(conn.GetPoolableConn())
 	if err != nil {
 		return

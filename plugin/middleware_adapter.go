@@ -1,6 +1,8 @@
 package plugin
 
-import "github.com/zoowii/jsonrpc_proxygo/rpc"
+import (
+	"github.com/zoowii/jsonrpc_proxygo/rpc"
+)
 
 type MiddlewareAdapter struct {
 	nextMiddleware Middleware

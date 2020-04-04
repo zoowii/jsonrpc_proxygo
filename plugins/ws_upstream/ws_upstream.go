@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
+	"github.com/zoowii/jsonrpc_proxygo/common"
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
-	"github.com/zoowii/jsonrpc_proxygo/plugins/common"
+	pluginsCommon "github.com/zoowii/jsonrpc_proxygo/plugins/common"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"time"
@@ -15,14 +16,20 @@ var log = utils.GetLogger("upstream")
 
 type WsUpstreamMiddleware struct {
 	plugin.MiddlewareAdapter
-	UpstreamTimeout       time.Duration
-	DefaultTargetEndpoint string
+
+	options *wsUpstreamMiddlewareOptions
 }
 
-func NewWsUpstreamMiddleware(defaultTargetEndpoint string) *WsUpstreamMiddleware {
+func NewWsUpstreamMiddleware(argOptions ...common.Option) *WsUpstreamMiddleware {
+	mOptions := &wsUpstreamMiddlewareOptions{
+		upstreamTimeout:       30 * time.Second,
+		defaultTargetEndpoint: "",
+	}
+	for _, o := range argOptions {
+		o(mOptions)
+	}
 	return &WsUpstreamMiddleware{
-		UpstreamTimeout:       30 * time.Second,
-		DefaultTargetEndpoint: defaultTargetEndpoint,
+		options: mOptions,
 	}
 }
 
@@ -83,7 +90,17 @@ func (middleware *WsUpstreamMiddleware) watchUpstreamConnectionResponseAndToDisp
 }
 
 func (middleware *WsUpstreamMiddleware) OnStart() (err error) {
+	log.Info("websocket upstream plugin starting")
 	return middleware.NextOnStart()
+}
+
+func (middleware *WsUpstreamMiddleware) getTargetEndpoint(session *rpc.ConnectionSession) (target string, err error) {
+	return pluginsCommon.GetSelectedUpstreamTargetEndpoint(session, &middleware.options.defaultTargetEndpoint)
+}
+
+func connectTargetEndpoint(targetEndpoint string) (*websocket.Conn, error) {
+	conn, _, err := websocket.DefaultDialer.Dial(targetEndpoint, nil)
+	return conn, err
 }
 
 func (middleware *WsUpstreamMiddleware) OnConnection(session *rpc.ConnectionSession) (err error) {
@@ -92,7 +109,7 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *rpc.ConnectionSess
 		err = errors.New("when OnConnection, session has connected to upstream target before")
 		return
 	}
-	targetEndpoint, err := common.GetSelectedUpstreamTargetEndpoint(session, &middleware.DefaultTargetEndpoint)
+	targetEndpoint, err := middleware.getTargetEndpoint(session)
 	if err != nil {
 		return
 	}
@@ -101,7 +118,7 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *rpc.ConnectionSess
 
 	go func() {
 		log.Debugf("connecting to %s\n", targetEndpoint)
-		c, _, err := websocket.DefaultDialer.Dial(targetEndpoint, nil)
+		c, err := connectTargetEndpoint(targetEndpoint)
 		if err != nil {
 			log.Println("dial:", err)
 			return
@@ -224,7 +241,7 @@ func (middleware *WsUpstreamMiddleware) OnRpcRequest(session *rpc.JSONRpcRequest
 	rpcRequestBytes := session.RequestBytes
 
 	// create response future before to use in ProcessRpcRequest
-	session.RpcResponseFutureChan = make(chan *rpc.JSONRpcResponse)
+	session.RpcResponseFutureChan = make(chan *rpc.JSONRpcResponse, 1)
 
 	connSession.RpcRequestsDispatchChannel <- &rpc.RpcRequestDispatchData{
 		Type: rpc.RPC_REQUEST_CHANGE_TYPE_ADD_REQUEST,
@@ -274,7 +291,7 @@ func (middleware *WsUpstreamMiddleware) ProcessRpcRequest(session *rpc.JSONRpcRe
 
 	var rpcRes *rpc.JSONRpcResponse
 	select {
-	case <-time.After(middleware.UpstreamTimeout):
+	case <-time.After(middleware.options.upstreamTimeout):
 		rpcRes = rpc.NewJSONRpcResponse(rpcRequestId, nil,
 			rpc.NewJSONRpcResponseError(rpc.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR,
 				"upstream target connection closed", nil))

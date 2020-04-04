@@ -5,6 +5,7 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/config"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/cache"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/disable"
+	"github.com/zoowii/jsonrpc_proxygo/plugins/http_upstream"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/load_balancer"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/rate_limit"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/statistic"
@@ -133,6 +134,7 @@ func LoadProviderFromConfig(configInfo *config.ServerConfig) providers.RpcProvid
 
 func LoadPluginsFromConfig(server *proxy.ProxyServer, configInfo *config.ServerConfig) {
 	ws_upstream.LoadWsUpstreamPluginConfig(server.MiddlewareChain, configInfo)
+	http_upstream.LoadHttpUpstreamPluginConfig(server.MiddlewareChain, configInfo)
 	load_balancer.LoadLoadBalancePluginConfig(server.MiddlewareChain, configInfo)
 	disable.LoadDisablePluginConfig(server.MiddlewareChain, configInfo)
 	cache.LoadCachePluginConfig(server.MiddlewareChain, configInfo)

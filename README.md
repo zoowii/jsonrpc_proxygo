@@ -7,8 +7,9 @@ you can add middlewares like upstream, cache, load balance, log, tracing, heartb
 
 # Supported Middlewares
 
-* exposed http jsonrpc and websocket jsonrpc interfaces(providers)
-* upstream: dispatch jsonrpc(based on websocket) to backend endpoints
+* expose http jsonrpc and websocket jsonrpc interfaces(providers)
+* upstream: dispatch jsonrpc(based on websocket or http) to backend endpoints(websocket or http)
+* expose http jsonrpc service as websocket jsonrpc service 
 * load-balance: use WeightedRound-Robin algorithm to select one endpoint to use in upstream middleware
 * cache: cache some jsonrpc method's responses by jsonrpc method name and some params for some time
 * before-cache: extract some jsonrpc params to cache key to use in cache middleware

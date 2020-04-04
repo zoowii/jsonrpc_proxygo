@@ -31,6 +31,9 @@
         }
       ]
     },
+    "http_upstream": {
+      "start": false
+    },
     "caches": [
       {
         "name": "dummyMethod",

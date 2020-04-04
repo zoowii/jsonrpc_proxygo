@@ -1,0 +1,3 @@
+Flask-JSONRPC
+flask
+requests
