@@ -8,7 +8,7 @@ package statistic
 
 import (
 	"context"
-	"github.com/zoowii/jsonrpc_proxygo/config"
+	"github.com/zoowii/jsonrpc_proxygo/common"
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
@@ -33,7 +33,7 @@ type StatisticMiddleware struct {
 	store MetricStore
 }
 
-func NewStatisticMiddleware(options ...config.Option) *StatisticMiddleware {
+func NewStatisticMiddleware(options ...common.Option) *StatisticMiddleware {
 	const maxRpcChannelSize = 10000
 
 	mOptions := &MetricOptions{}

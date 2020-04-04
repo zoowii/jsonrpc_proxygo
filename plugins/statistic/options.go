@@ -1,7 +1,7 @@
 package statistic
 
 import (
-	"github.com/zoowii/jsonrpc_proxygo/config"
+	"github.com/zoowii/jsonrpc_proxygo/common"
 )
 
 type MetricOptions struct {
@@ -9,8 +9,8 @@ type MetricOptions struct {
 	dumpIntervalOpened bool        // whether dump metric status interval
 }
 
-func DbStore(dbUrl string) config.Option {
-	return func(options config.Options) {
+func DbStore(dbUrl string) common.Option {
+	return func(options common.Options) {
 		mOptions, _ := options.(*MetricOptions)
 		dbStore := newMetricDbStore(dbUrl)
 		mOptions.store = dbStore
@@ -21,8 +21,8 @@ func DbStore(dbUrl string) config.Option {
 	}
 }
 
-func DumpInterval() config.Option {
-	return func(options config.Options) {
+func DumpInterval() common.Option {
+	return func(options common.Options) {
 		mOptions, _ := options.(*MetricOptions)
 		mOptions.dumpIntervalOpened = true
 	}

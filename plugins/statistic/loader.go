@@ -1,6 +1,7 @@
 package statistic
 
 import (
+	"github.com/zoowii/jsonrpc_proxygo/common"
 	"github.com/zoowii/jsonrpc_proxygo/config"
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 )
@@ -8,7 +9,7 @@ import (
 func LoadStatisticPluginConfig(chain *plugin.MiddlewareChain, configInfo *config.ServerConfig) {
 	statisticPluginConf := configInfo.Plugins.Statistic
 	if statisticPluginConf.Start {
-		options := make([]config.Option, 0)
+		options := make([]common.Option, 0)
 		if statisticPluginConf.Store.DumpIntervalOpened {
 			options = append(options, DumpInterval())
 			log.Info("statistic plugin load DumpInterval option")

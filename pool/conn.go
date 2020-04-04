@@ -51,8 +51,8 @@ type connPool struct {
 	factory            UpstreamConnFactory
 }
 
-func NewConnPool(max, initSize int, factory UpstreamConnFactory) (pool *connPool, err error) {
-	pool = &connPool{
+func NewConnPool(max, initSize int, factory UpstreamConnFactory) (pool ConnPool, err error) {
+	realPool := &connPool{
 		queueSize:          0,
 		max:                max,
 		initSize:           initSize,
@@ -60,11 +60,12 @@ func NewConnPool(max, initSize int, factory UpstreamConnFactory) (pool *connPool
 		factory:            factory,
 	}
 	if initSize > 0 {
-		err = pool.createConnections(initSize)
+		err = realPool.createConnections(initSize)
 		if err != nil {
 			return
 		}
 	}
+	pool = realPool
 	return
 }
 

@@ -1,4 +1,4 @@
-package config
+package common
 
 type Options interface {
 
