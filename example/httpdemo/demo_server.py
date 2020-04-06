@@ -14,5 +14,9 @@ def index():
 def hello(name):
     return 'Hello, %s, this is response from server' % name
 
+@jsonrpc.method("error")
+def dummyError():
+    raise Exception('dummy error response')
+
 if __name__ == '__main__':
     app.run(port=3000, debug=True)

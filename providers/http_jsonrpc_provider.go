@@ -122,8 +122,7 @@ func (provider *HttpJsonRpcProvider) watchConnectionMessages(ctx context.Context
 		err = errors.New("jsonrpc request error" + err.Error())
 		return
 	}
-	rpcSession.Request = rpcReq
-	rpcSession.RequestBytes = message
+	rpcSession.FillRpcRequest(rpcReq, message)
 	err = provider.rpcProcessor.OnRpcRequest(connSession, rpcSession)
 	return
 }

@@ -18,7 +18,6 @@ var log = utils.GetLogger("http_upstream")
 
 type HttpUpstreamMiddleware struct {
 	plugin.MiddlewareAdapter
-	DefaultTargetEndpoint string
 
 	options *httpUpstreamMiddlewareOptions
 }
@@ -60,7 +59,7 @@ func (m *HttpUpstreamMiddleware) OnConnectionClosed(session *rpc.ConnectionSessi
 }
 
 func (m *HttpUpstreamMiddleware) getTargetEndpoint(session *rpc.ConnectionSession) (target string, err error) {
-	return pluginsCommon.GetSelectedUpstreamTargetEndpoint(session, &m.DefaultTargetEndpoint)
+	return pluginsCommon.GetSelectedUpstreamTargetEndpoint(session, &m.options.defaultTargetEndpoint)
 }
 
 func (m *HttpUpstreamMiddleware) OnRpcRequest(session *rpc.JSONRpcRequestSession) (err error) {
@@ -83,25 +82,40 @@ func (m *HttpUpstreamMiddleware) OnRpcRequest(session *rpc.JSONRpcRequestSession
 		return
 	}
 	log.Debugln("rpc request " + string(rpcRequestBytes))
-	go func() {
+
+	httpRpcCall := func() (rpcRes *rpc.JSONRpcResponse, err error) {
 		resp, err := http.Post(targetEndpoint, "application/json", bytes.NewReader(rpcRequestBytes))
 		if err != nil {
-			// TODO: write error rpc response
+			log.Debugln("http rpc response error", err.Error())
+			errResp := rpc.NewJSONRpcResponse(rpcRequest.Id, nil,
+				rpc.NewJSONRpcResponseError(rpc.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR, err.Error(), nil))
+			session.RpcResponseFutureChan <- errResp
 			return
 		}
 		defer resp.Body.Close()
 		respMsg, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			// TODO: write error rpc response
 			return
 		}
 		log.Debugln("backend rpc response " + string(respMsg))
-		rpcRes, err := rpc.DecodeJSONRPCResponse(respMsg)
+		rpcRes, err = rpc.DecodeJSONRPCResponse(respMsg)
 		if err != nil {
 			return
 		}
 		if rpcRes == nil {
 			err = errors.New("invalid jsonrpc response format from http upstream: " + string(respMsg))
+			return
+		}
+		return
+	}
+
+	go func() {
+		rpcRes, err := httpRpcCall()
+		if err != nil {
+			log.Debugln("http rpc response error", err.Error())
+			errResp := rpc.NewJSONRpcResponse(rpcRequest.Id, nil,
+				rpc.NewJSONRpcResponseError(rpc.RPC_UPSTREAM_CONNECTION_CLOSED_ERROR, err.Error(), nil))
+			session.RpcResponseFutureChan <- errResp
 			return
 		}
 		session.RpcResponseFutureChan <- rpcRes
@@ -116,7 +130,7 @@ func (m *HttpUpstreamMiddleware) OnRpcResponse(session *rpc.JSONRpcRequestSessio
 			err = m.NextOnJSONRpcResponse(session)
 		}
 	}()
-	// TODO
+
 	return
 }
 

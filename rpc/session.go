@@ -94,6 +94,11 @@ func NewJSONRpcRequestSession(conn *ConnectionSession) *JSONRpcRequestSession {
 	}
 }
 
+func (requestSession *JSONRpcRequestSession) FillRpcRequest(request *JSONRpcRequest, requestBytes []byte) {
+	requestSession.Request = request
+	requestSession.RequestBytes = requestBytes
+}
+
 func (requestSession *JSONRpcRequestSession) FillRpcResponse(response *JSONRpcResponse) {
 	requestSession.Response = response
 }
