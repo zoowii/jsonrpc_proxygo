@@ -6,9 +6,10 @@ import (
 
 type Registry interface {
 	Init(...common.Option) error
-	RegisterService() error
-	DeregisterService() error
-	ListServices() error
-	Watch() (Watcher, error)
+	RegisterService(service *Service) error
+	DeregisterService(service *Service) error
+	ListServices() ([]*Service, error)
+	Watch() (*Watcher, error)
+	Close() error
 	String() string
 }

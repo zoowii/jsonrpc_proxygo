@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/VividCortex/godaemon v0.0.0-20150910212227-3d9f6e0b234f // indirect
+	github.com/go-redis/redis/v7 v7.2.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/mock v1.4.3
 	github.com/gorilla/websocket v1.4.1
