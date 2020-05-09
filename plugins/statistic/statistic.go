@@ -12,22 +12,24 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
-	"sync"
 	"time"
 )
 
 var log = utils.GetLogger("statistic")
 
+// 使用中的metricStore，用来暴露给其他组件访问
+var UsedMetricStore MetricStore = nil
+
 type StatisticMiddleware struct {
 	plugin.MiddlewareAdapter
 	rpcRequestsReceived  chan *rpc.JSONRpcRequestSession
 	rpcResponsesReceived chan *rpc.JSONRpcRequestSession
-
-	globalRpcMethodsCount *utils.MemoryCache
-
-	hourlyLock            sync.RWMutex
-	hourlyStartTime       time.Time
-	hourlyRpcMethodsCount *utils.MemoryCache
+	//
+	//globalRpcMethodsCount *utils.MemoryCache
+	//
+	//hourlyLock            sync.RWMutex
+	//hourlyStartTime       time.Time
+	//hourlyRpcMethodsCount *utils.MemoryCache
 
 	metricOptions *MetricOptions
 	store MetricStore
@@ -48,12 +50,19 @@ func NewStatisticMiddleware(options ...common.Option) *StatisticMiddleware {
 		store = newDefaultMetricStore()
 	}
 
+	UsedMetricStore = store
+
+	err := store.Init()
+	if err != nil {
+		log.Fatalf("statistic store init error %s", err.Error())
+	}
+
 	return &StatisticMiddleware{
 		rpcRequestsReceived:   make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
 		rpcResponsesReceived:  make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
-		globalRpcMethodsCount: utils.NewMemoryCache(),
-		hourlyStartTime:       time.Now(),
-		hourlyRpcMethodsCount: utils.NewMemoryCache(),
+		//globalRpcMethodsCount: utils.NewMemoryCache(),
+		//hourlyStartTime:       time.Now(),
+		//hourlyRpcMethodsCount: utils.NewMemoryCache(),
 		metricOptions:         mOptions,
 		store:                 store,
 	}
@@ -88,12 +97,12 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 				}
 				// notify user every some time
 				log.Info("start dump statistic info")
-				globalStatJson, err := middleware.globalRpcMethodsCount.DumpItems()
+				globalStatJson, err := middleware.store.DumpGlobalStatInfoJson()
 				if err != nil {
 					log.Error("dump globalRpcMethodsCount error", err)
 					continue
 				}
-				hourlyStatJson, err := middleware.hourlyRpcMethodsCount.DumpItems()
+				hourlyStatJson, err := middleware.store.DumpHourlyStatInfoJson()
 				if err != nil {
 					log.Error("dump hourlyRpcMethodsCount error", err)
 					continue
@@ -104,30 +113,10 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 				methodNameForStatistic := getMethodNameForRpcStatistic(reqSession)
 
 				// update global rpc methods called count
-				_, ok := middleware.globalRpcMethodsCount.Get(methodNameForStatistic)
-				if ok {
-					_ = middleware.globalRpcMethodsCount.Increment(methodNameForStatistic, 1)
-				} else {
-					middleware.globalRpcMethodsCount.SetDefault(methodNameForStatistic, 1)
-				}
+				store.IncrementGlobalRpcMethodCalledCount(methodNameForStatistic)
 
 				// update hourly rpc methods called count
-				func() {
-					middleware.hourlyLock.Lock()
-					defer middleware.hourlyLock.Unlock()
-					now := time.Now()
-					if now.Sub(middleware.hourlyStartTime) > 1*time.Hour {
-						middleware.hourlyStartTime = now
-						middleware.hourlyRpcMethodsCount.Flush() // delete all items
-					}
-					_, ok := middleware.hourlyRpcMethodsCount.Get(methodNameForStatistic)
-					if ok {
-						_ = middleware.hourlyRpcMethodsCount.Increment(methodNameForStatistic, 1)
-					} else {
-						middleware.hourlyRpcMethodsCount.SetDefault(methodNameForStatistic, 1)
-					}
-				}()
-
+				store.IncrementHourlyRpcMethodCalledCount(methodNameForStatistic)
 
 				// TODO: 根据策略随机采样或者全部记录请求和返回的数据
 				includeDebug := true

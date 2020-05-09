@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/zoowii/jsonrpc_proxygo/config"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/cache"
+	"github.com/zoowii/jsonrpc_proxygo/plugins/dashboard"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/disable"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/http_upstream"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/load_balancer"
@@ -141,4 +142,5 @@ func LoadPluginsFromConfig(server *proxy.ProxyServer, configInfo *config.ServerC
 	cache.LoadBeforeCachePluginConfig(server.MiddlewareChain, configInfo)
 	rate_limit.LoadRateLimitPluginConfig(server.MiddlewareChain, configInfo)
 	statistic.LoadStatisticPluginConfig(server.MiddlewareChain, configInfo)
+	dashboard.LoadDashboardPluginConfig(server.MiddlewareChain, configInfo)
 }

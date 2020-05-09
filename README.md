@@ -82,6 +82,10 @@ go build
       "start": true,
       "connection_rate": 10000,
       "rpc_rate": 1000000
+    },
+    "dashboard": {
+      "start": true,
+      "endpoint": ":5000"
     }
   }
 }

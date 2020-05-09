@@ -26,6 +26,7 @@ func nextId(sf *sonyflake.Sonyflake) uint64 {
 }
 
 type metricDbStore struct {
+	BaseMetricStore
 	dbUrl string
 	db    *sql.DB
 	sf    *sonyflake.Sonyflake
@@ -137,6 +138,10 @@ func (store *metricDbStore) Name() string {
 }
 
 func (store *metricDbStore) Init() error {
+	err := store.BaseMetricStore.Init()
+	if err != nil {
+		return err
+	}
 	db, err := createConn(store.dbUrl)
 	if err != nil {
 		return err

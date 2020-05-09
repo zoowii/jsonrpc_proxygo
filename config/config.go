@@ -78,6 +78,11 @@ type ServerConfig struct {
 			ConnectionRate int  `json:"connection_rate,omitempty"`
 			RpcRate        int  `json:"rpc_rate,omitempty"`
 		} `json:"rate_limit,omitempty"`
+
+		Dashboard struct {
+			Start bool `json:"start,omitempty"`
+			Endpoint string `json:"endpoint"`
+		} `json:"dashboard,omitempty"`
 	} `json:"plugins,omitempty"`
 }
 
