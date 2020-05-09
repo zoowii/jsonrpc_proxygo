@@ -15,6 +15,8 @@ you can add middlewares like upstream, cache, load balance, log, tracing, heartb
 * before-cache: extract some jsonrpc params to cache key to use in cache middleware
 * statistic: calculate statistic metrics of the jsonrpc services. It works async and won't block the service
 * rate-limit
+* disable: plugin to disable some jsonrpc services
+* dashboard: plugin of dashboard web module
 
 # Usage
 
