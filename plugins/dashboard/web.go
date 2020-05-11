@@ -31,10 +31,19 @@ func (middleware *DashboardMiddleware) Name() string {
 	return "dashboard"
 }
 
+func allowCors(writer *http.ResponseWriter, request *http.Request) {
+	(*writer).Header().Add("Access-Control-Allow-Credentials", "true")
+	(*writer).Header().Set("Access-Control-Allow-Origin", "*")
+	(*writer).Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	(*writer).Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Content-Length")
+}
+
 func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 	store := statistic.UsedMetricStore
 	http.HandleFunc("/api/statistic", func(writer http.ResponseWriter, request *http.Request) {
 		// 统计摘要数据
+		allowCors(&writer, request)
+
 		if store == nil {
 			writer.WriteHeader(http.StatusInternalServerError)
 			writer.Write([]byte("metricStore not init"))
