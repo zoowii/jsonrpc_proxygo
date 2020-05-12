@@ -48,6 +48,8 @@ export default new Vuex.Store({
     barImage: 'https://demos.creative-tim.com/material-dashboard/assets/img/sidebar-1.jpg',
     drawer: null,
     statistics: {
+      globalRpcCallCount: 0,
+      hourlyRpcCallCount: 0,
       globalStat: {},
       hourlyStat: {},
     },

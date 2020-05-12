@@ -32,7 +32,7 @@ type StatisticMiddleware struct {
 	//hourlyRpcMethodsCount *utils.MemoryCache
 
 	metricOptions *MetricOptions
-	store MetricStore
+	store         MetricStore
 }
 
 func NewStatisticMiddleware(options ...common.Option) *StatisticMiddleware {
@@ -58,13 +58,13 @@ func NewStatisticMiddleware(options ...common.Option) *StatisticMiddleware {
 	}
 
 	return &StatisticMiddleware{
-		rpcRequestsReceived:   make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
-		rpcResponsesReceived:  make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
+		rpcRequestsReceived:  make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
+		rpcResponsesReceived: make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
 		//globalRpcMethodsCount: utils.NewMemoryCache(),
 		//hourlyStartTime:       time.Now(),
 		//hourlyRpcMethodsCount: utils.NewMemoryCache(),
-		metricOptions:         mOptions,
-		store:                 store,
+		metricOptions: mOptions,
+		store:         store,
 	}
 }
 
@@ -96,27 +96,23 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 					continue
 				}
 				// notify user every some time
-				log.Info("start dump statistic info")
-				globalStatJson, err := middleware.store.DumpGlobalStatInfoJson()
-				if err != nil {
-					log.Error("dump globalRpcMethodsCount error", err)
-					continue
-				}
-				hourlyStatJson, err := middleware.store.DumpHourlyStatInfoJson()
-				if err != nil {
-					log.Error("dump hourlyRpcMethodsCount error", err)
-					continue
-				}
-				log.Infof("globalRpcMethodsCount: %s", string(globalStatJson))
-				log.Infof("hourlyRpcMethodsCount: %s", string(hourlyStatJson))
+				//log.Info("start dump statistic info")
+				//globalStatJson, err := middleware.store.DumpGlobalStatInfoJson()
+				//if err != nil {
+				//	log.Error("dump globalRpcMethodsCount error", err)
+				//	continue
+				//}
+				//hourlyStatJson, err := middleware.store.DumpHourlyStatInfoJson()
+				//if err != nil {
+				//	log.Error("dump hourlyRpcMethodsCount error", err)
+				//	continue
+				//}
+				//log.Infof("globalRpcMethodsCount: %s", string(globalStatJson))
+				//log.Infof("hourlyRpcMethodsCount: %s", string(hourlyStatJson))
 			case reqSession := <-middleware.rpcRequestsReceived:
 				methodNameForStatistic := getMethodNameForRpcStatistic(reqSession)
 
-				// update global rpc methods called count
-				store.IncrementGlobalRpcMethodCalledCount(methodNameForStatistic)
-
-				// update hourly rpc methods called count
-				store.IncrementHourlyRpcMethodCalledCount(methodNameForStatistic)
+				store.addRpcMethodCall(methodNameForStatistic)
 
 				// TODO: 根据策略随机采样或者全部记录请求和返回的数据
 				includeDebug := true

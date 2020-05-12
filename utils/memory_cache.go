@@ -5,7 +5,7 @@ package utils
  */
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -22,6 +22,40 @@ func (item Item) Expired() bool {
 		return false
 	}
 	return time.Now().UnixNano() > item.Expiration
+}
+
+func (v Item) ObjectAsInt64() (intValue int64, err error) {
+	switch v.Object.(type) {
+	case int:
+		intValue = int64(v.Object.(int))
+	case int8:
+		intValue = int64(v.Object.(int8))
+	case int16:
+		intValue = int64(v.Object.(int16))
+	case int32:
+		intValue = int64(v.Object.(int32))
+	case int64:
+		intValue = v.Object.(int64)
+	case uint:
+		intValue = int64(v.Object.(uint))
+	case uintptr:
+		intValue = int64(v.Object.(uintptr))
+	case uint8:
+		intValue = int64(v.Object.(uint8))
+	case uint16:
+		intValue = int64(v.Object.(uint16))
+	case uint32:
+		intValue = int64(v.Object.(uint32))
+	case uint64:
+		intValue = int64(v.Object.(uint64))
+	case float32:
+		intValue = int64(v.Object.(float32))
+	case float64:
+		intValue = int64(v.Object.(float64))
+	default:
+		err = errors.New("the value is not an integer")
+	}
+	return
 }
 
 const (
@@ -213,9 +247,12 @@ func (c *MemoryCache) Flush() {
 	c.mu.Unlock()
 }
 
-func (c *MemoryCache) DumpItems() (jsonBytes []byte, err error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	jsonBytes, err = json.Marshal(c.items)
+func (c *MemoryCache) DumpItems() (result map[string]Item, err error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	result = make(map[string]Item)
+	for k, v := range c.items {
+		result[k] = v
+	}
 	return
 }

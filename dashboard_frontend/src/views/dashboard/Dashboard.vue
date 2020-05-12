@@ -225,10 +225,10 @@
         <base-material-stats-card
           color="info"
           icon="mdi-twitter"
-          title="Followers"
-          value="+245"
+          title="Rpc Call"
+          :value="''+globalRpcCallCount"
           sub-icon="mdi-clock"
-          sub-text="Just Updated"
+          sub-text="Global Rpc Call Count"
         />
       </v-col>
 
@@ -240,10 +240,10 @@
         <base-material-stats-card
           color="primary"
           icon="mdi-poll"
-          title="Website Visits"
-          value="75.521"
+          title="Hourly Rpc Call"
+          :value="''+hourlyRpcCallCount"
           sub-icon="mdi-tag"
-          sub-text="Tracked from Google Analytics"
+          sub-text="Hourly Rpc Call Count"
         />
       </v-col>
 
@@ -255,10 +255,10 @@
         <base-material-stats-card
           color="success"
           icon="mdi-store"
-          title="Revenue"
-          value="$ 34,245"
+          title="Called Methods"
+          :value="''+calledMethodsCount"
           sub-icon="mdi-calendar"
-          sub-text="Last 24 Hours"
+          sub-text="Called Rpc Methods Count"
         />
       </v-col>
 
@@ -270,11 +270,11 @@
         <base-material-stats-card
           color="orange"
           icon="mdi-sofa"
-          title="Bookings"
+          title="Upstreams"
           value="184"
           sub-icon="mdi-alert"
           sub-icon-color="red"
-          sub-text="Get More Space..."
+          sub-text="Online Upstreams Count"
         />
       </v-col>
 
@@ -430,6 +430,9 @@
       return {
         globalStatInfo: {},
         hourlyStatInfo: {},
+        globalRpcCallCount: 0,
+        hourlyRpcCallCount: 0,
+        calledMethodsCount: 0,
         dailySalesChart: {
           data: {
             labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
@@ -555,20 +558,6 @@
               value: false,
             },
           ],
-          2: [
-            {
-              text: 'Lines From Great Russian Literature? Or E-mails From My Boss?',
-              value: false,
-            },
-            {
-              text: 'Flooded: One year later, assessing what was lost and what was found when a ravaging rain swept through metro Detroit',
-              value: true,
-            },
-            {
-              text: 'Sign contract for "What are conference organizers afraid of?"',
-              value: true,
-            },
-          ],
         },
         list: {
           0: false,
@@ -588,23 +577,28 @@
         // global
         const globalItems = []
         if (statistics.globalStat) {
+          this.calledMethodsCount = 0
           for (const method in statistics.globalStat) {
             const value = statistics.globalStat[method]
-            const item = { name: method, expiration: value.Expiration, callCount: value.Object }
+            const item = { name: method, expiration: value.expiration, callCount: value.callCount }
             globalItems.push(item)
+            this.calledMethodsCount += 1
           }
         }
         this.globalStatsItems = globalItems
+        this.globalRpcCallCount = statistics.globalRpcCallCount
         // hourly
         const hourlyItems = []
         if (statistics.hourlyStat) {
           for (const method in statistics.hourlyStat) {
             const value = statistics.hourlyStat[method]
-            const item = { name: method, expiration: value.Expiration, callCount: value.Object }
+            const item = { name: method, expiration: value.expiration, callCount: value.callCount }
             hourlyItems.push(item)
           }
         }
         this.hourlyStatsItems = hourlyItems
+        this.hourlyRpcCallCount = statistics.hourlyRpcCallCount
+        // TODO: load configs, and upstream endpoints
       },
     },
     mounted () {

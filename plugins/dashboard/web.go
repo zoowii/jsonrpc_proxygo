@@ -42,6 +42,7 @@ func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 	store := statistic.UsedMetricStore
 	http.HandleFunc("/api/statistic", func(writer http.ResponseWriter, request *http.Request) {
 		// 统计摘要数据
+		log.Info("receive /api/statistic")
 		allowCors(&writer, request)
 
 		if store == nil {
@@ -49,32 +50,12 @@ func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 			writer.Write([]byte("metricStore not init"))
 			return
 		}
-		globalStatBytes, err := store.DumpGlobalStatInfoJson()
+		statInfo, err := store.DumpStatInfo()
 		if err != nil {
 			writer.Write([]byte(err.Error()))
 			return
 		}
-		var globalStat interface{}
-		err = json.Unmarshal(globalStatBytes, &globalStat)
-		if err != nil {
-			writer.Write([]byte(err.Error()))
-			return
-		}
-		hourlyStatBytes, err := store.DumpHourlyStatInfoJson()
-		if err != nil {
-			writer.Write([]byte(err.Error()))
-			return
-		}
-		var hourlyStat interface{}
-		err = json.Unmarshal(hourlyStatBytes, &hourlyStat)
-		if err != nil {
-			writer.Write([]byte(err.Error()))
-			return
-		}
-		m := make(map[string]interface{})
-		m["globalStat"] = globalStat
-		m["hourlyStat"] = hourlyStat
-		mBytes, err := json.Marshal(m)
+		mBytes, err := json.Marshal(statInfo)
 		if err != nil {
 			writer.Write([]byte(err.Error()))
 			return
