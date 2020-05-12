@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 	"github.com/zoowii/jsonrpc_proxygo/providers"
+	"github.com/zoowii/jsonrpc_proxygo/registry"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 )
@@ -16,6 +17,7 @@ var log = utils.GetLogger("server")
 type ProxyServer struct {
 	MiddlewareChain *plugin.MiddlewareChain
 	Provider        providers.RpcProvider
+	Registry        registry.Registry
 }
 
 /**
@@ -90,4 +92,11 @@ func (server *ProxyServer) Start() {
 	}
 	server.Provider.SetRpcProcessor(server)
 	log.Fatal(server.Provider.ListenAndServe())
+}
+
+func (server *ProxyServer) Close() {
+	if server.Registry != nil {
+		server.Registry.Close()
+		server.Registry = nil
+	}
 }

@@ -13,8 +13,11 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/plugins/ws_upstream"
 	"github.com/zoowii/jsonrpc_proxygo/providers"
 	"github.com/zoowii/jsonrpc_proxygo/proxy"
+	"github.com/zoowii/jsonrpc_proxygo/registry/redis"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"io/ioutil"
+	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -133,14 +136,54 @@ func LoadProviderFromConfig(configInfo *config.ServerConfig) providers.RpcProvid
 	return provider
 }
 
+func loadRegistryFromConfig(server *proxy.ProxyServer, configInfo *config.ServerConfig) {
+	if !configInfo.Registry.Start || len(configInfo.Registry.Url) < 1 {
+		return
+	}
+	registryUrl := configInfo.Registry.Url
+	uri, err := url.ParseRequestURI(registryUrl)
+	if err != nil {
+		log.Errorf("registry url error %s", err.Error())
+		return
+	}
+	if uri.Scheme == "redis" {
+		// redis registry
+		redisEndpoint := uri.Host
+		p := uri.Path
+		redisDb := 0
+		var intErr error
+		if len(p)>1 && p[0] == '/' {
+			redisDb, intErr = strconv.Atoi(p[1:])
+			if intErr != nil {
+				log.Errorf("registry url error %s", intErr.Error())
+				return
+			}
+		}
+
+		r := redis.NewRedisRegistry()
+		err = r.Init(
+			redis.RedisEndpoint(redisEndpoint),
+			redis.RedisDatabase(redisDb))
+		if err != nil {
+			log.Errorf("init redis registry error %s", err.Error())
+			return
+		}
+		server.Registry = r
+	} else {
+		log.Errorf("not supported registry type %s", uri.Scheme)
+	}
+}
+
 func LoadPluginsFromConfig(server *proxy.ProxyServer, configInfo *config.ServerConfig) {
+	loadRegistryFromConfig(server, configInfo)
+
 	ws_upstream.LoadWsUpstreamPluginConfig(server.MiddlewareChain, configInfo)
 	http_upstream.LoadHttpUpstreamPluginConfig(server.MiddlewareChain, configInfo)
-	load_balancer.LoadLoadBalancePluginConfig(server.MiddlewareChain, configInfo)
+	load_balancer.LoadLoadBalancePluginConfig(server.MiddlewareChain, configInfo, server.Registry)
 	disable.LoadDisablePluginConfig(server.MiddlewareChain, configInfo)
 	cache.LoadCachePluginConfig(server.MiddlewareChain, configInfo)
 	cache.LoadBeforeCachePluginConfig(server.MiddlewareChain, configInfo)
 	rate_limit.LoadRateLimitPluginConfig(server.MiddlewareChain, configInfo)
 	statistic.LoadStatisticPluginConfig(server.MiddlewareChain, configInfo)
-	dashboard.LoadDashboardPluginConfig(server.MiddlewareChain, configInfo)
+	dashboard.LoadDashboardPluginConfig(server.MiddlewareChain, configInfo, server.Registry)
 }

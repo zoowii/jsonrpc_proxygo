@@ -52,6 +52,7 @@ export default new Vuex.Store({
       hourlyRpcCallCount: 0,
       globalStat: {},
       hourlyStat: {},
+      upstreamServices: [],
     },
   },
   mutations: {

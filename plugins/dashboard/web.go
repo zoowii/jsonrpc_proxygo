@@ -5,6 +5,7 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/common"
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/statistic"
+	"github.com/zoowii/jsonrpc_proxygo/registry"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"net/http"
@@ -20,6 +21,9 @@ type DashboardMiddleware struct {
 func NewDashboardMiddleware(options ...common.Option) *DashboardMiddleware {
 	mOptions := newDashBoardOptions()
 	for _, o := range options {
+		if o == nil {
+			continue
+		}
 		o(mOptions)
 	}
 	return &DashboardMiddleware{
@@ -40,6 +44,7 @@ func allowCors(writer *http.ResponseWriter, request *http.Request) {
 
 func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 	store := statistic.UsedMetricStore
+	r := m.mOptions.Registry
 	http.HandleFunc("/api/statistic", func(writer http.ResponseWriter, request *http.Request) {
 		// 统计摘要数据
 		log.Info("receive /api/statistic")
@@ -55,6 +60,22 @@ func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 			writer.Write([]byte(err.Error()))
 			return
 		}
+
+		if r != nil {
+			services, err := r.ListServices()
+			if err != nil {
+				writer.Write([]byte(err.Error()))
+				return
+			}
+			upstreamServices := make([]*registry.Service, 0)
+			for _, s := range services {
+				if s.Name == "upstream" {
+					upstreamServices = append(upstreamServices, s)
+				}
+			}
+			statInfo.UpstreamServices = upstreamServices
+		}
+
 		mBytes, err := json.Marshal(statInfo)
 		if err != nil {
 			writer.Write([]byte(err.Error()))

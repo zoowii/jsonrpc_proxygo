@@ -32,6 +32,11 @@ type ServerConfig struct {
 		OutputFile string `json:"output_file,omitempty"`
 	} `json:"log,omitempty"`
 
+	Registry struct {
+		Start bool `json:"start,omitempty"`
+		Url string `json:"url"`
+	} `json:"registry,omitempty"`
+
 	Plugins struct {
 		// upstream plugin config
 		Upstream struct {

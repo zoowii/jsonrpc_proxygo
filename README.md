@@ -48,6 +48,10 @@ go build
     "level": "INFO",
     "output_file": "logs/jsonrpc_proxygo.log"
   },
+  "registry": {
+    "start": true,
+    "url": "redis://127.0.0.1:6379/1"
+  },
   "plugins": {
     "upstream": {
       "upstream_endpoints": [

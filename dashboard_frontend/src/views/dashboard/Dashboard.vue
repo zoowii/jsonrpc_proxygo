@@ -271,7 +271,7 @@
           color="orange"
           icon="mdi-sofa"
           title="Upstreams"
-          value="184"
+          :value="''+upstreamServices.length"
           sub-icon="mdi-alert"
           sub-icon-color="red"
           sub-text="Online Upstreams Count"
@@ -433,6 +433,7 @@
         globalRpcCallCount: 0,
         hourlyRpcCallCount: 0,
         calledMethodsCount: 0,
+        upstreamServices: [],
         dailySalesChart: {
           data: {
             labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
@@ -598,7 +599,10 @@
         }
         this.hourlyStatsItems = hourlyItems
         this.hourlyRpcCallCount = statistics.hourlyRpcCallCount
-        // TODO: load configs, and upstream endpoints
+        // load configs, and upstream endpoints
+        this.upstreamServices = statistics.upstreamServices
+
+        // TODO: show services list, plugin list, upstream list, request/response list
       },
     },
     mounted () {

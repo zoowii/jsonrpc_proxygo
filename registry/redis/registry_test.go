@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"github.com/zoowii/jsonrpc_proxygo/registry"
+	"net/url"
 	"testing"
 )
 
@@ -105,4 +106,26 @@ func TestRedisRegistry_Watch(t *testing.T) {
 		return
 	}
 	println("services after deregister", services)
+}
+
+func TestRegistryUrl(t *testing.T) {
+	registryUrl := "redis://127.0.0.1:6039/1"
+	uri, err := url.ParseRequestURI(registryUrl)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if uri.Scheme != "redis" {
+		t.Error("scheme error")
+		return
+	}
+	if uri.Host != "127.0.0.1:6039" {
+		t.Error("uri host error")
+		return
+	}
+	println("path", uri.Path)
+	if uri.Path != "/1" {
+		t.Error("uri path error")
+		return
+	}
 }

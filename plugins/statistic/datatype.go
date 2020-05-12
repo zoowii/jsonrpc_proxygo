@@ -1,5 +1,7 @@
 package statistic
 
+import "github.com/zoowii/jsonrpc_proxygo/registry"
+
 type MethodCallCacheInfo struct {
 	Expiration int64 `json:"expiration"` // expiration unix nano timestamp, 0 means no expire
 	CallCount  int64 `json:"callCount"`
@@ -10,6 +12,8 @@ type StatData struct {
 	HourlyStat         map[string]*MethodCallCacheInfo `json:"hourlyStat"`
 	GlobalRpcCallCount uint64                          `json:"globalRpcCallCount"`
 	HourlyRpcCallCount uint64                          `json:"hourlyRpcCallCount"`
+
+	UpstreamServices []*registry.Service `json:"upstreamServices"`
 }
 
 func NewStatData() *StatData {
@@ -18,5 +22,6 @@ func NewStatData() *StatData {
 		HourlyStat:         make(map[string]*MethodCallCacheInfo),
 		GlobalRpcCallCount: 0,
 		HourlyRpcCallCount: 0,
+		UpstreamServices:   make([]*registry.Service, 0),
 	}
 }
