@@ -8,7 +8,7 @@ import (
 
 type dashboardOptions struct {
 	Endpoint string
-	Context context.Context
+	Context  context.Context
 	Registry registry.Registry
 }
 

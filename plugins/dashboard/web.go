@@ -74,6 +74,7 @@ func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 				}
 			}
 			statInfo.UpstreamServices = upstreamServices
+			statInfo.Services = services
 		}
 
 		mBytes, err := json.Marshal(statInfo)

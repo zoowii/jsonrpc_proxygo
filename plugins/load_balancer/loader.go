@@ -33,7 +33,7 @@ func LoadLoadBalancePluginConfig(chain *plugin.MiddlewareChain, configInfo *conf
 			// register service to registry
 			err = r.RegisterService(&registry.Service{
 				Name: "upstream",
-				Url: itemConf.Url,
+				Url:  itemConf.Url,
 			})
 			if err != nil {
 				log.Fatalln("register upstream to registry error", err)

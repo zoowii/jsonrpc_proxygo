@@ -53,6 +53,7 @@ export default new Vuex.Store({
       globalStat: {},
       hourlyStat: {},
       upstreamServices: [],
+      services: [],
     },
   },
   mutations: {
@@ -76,6 +77,14 @@ export default new Vuex.Store({
           console.log('statistics', res)
           commit('setStatistics', res)
         })
+    },
+  },
+  getters: {
+    upstreamList (state) {
+      return state.statistics.upstreamServices
+    },
+    serviceList (state) {
+      return state.statistics.services
     },
   },
 })

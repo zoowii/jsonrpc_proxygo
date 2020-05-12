@@ -3,8 +3,8 @@ package registry
 import "fmt"
 
 type Service struct {
-	Name string
-	Url  string
+	Name string `json:"name"`
+	Url  string `json:"url"`
 }
 
 func (s *Service) String() string {

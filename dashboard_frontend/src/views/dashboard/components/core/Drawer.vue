@@ -111,6 +111,11 @@
           title: 'dashboard',
           to: '/',
         },
+        {
+          icon: 'mdi-clipboard-outline',
+          title: 'Services',
+          to: '/pages/upstreamlist',
+        },
         // {
         //   icon: 'mdi-account',
         //   title: 'user',

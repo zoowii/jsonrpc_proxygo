@@ -14,6 +14,7 @@ type StatData struct {
 	HourlyRpcCallCount uint64                          `json:"hourlyRpcCallCount"`
 
 	UpstreamServices []*registry.Service `json:"upstreamServices"`
+	Services         []*registry.Service `json:"services"`
 }
 
 func NewStatData() *StatData {
@@ -23,5 +24,6 @@ func NewStatData() *StatData {
 		GlobalRpcCallCount: 0,
 		HourlyRpcCallCount: 0,
 		UpstreamServices:   make([]*registry.Service, 0),
+		Services:           make([]*registry.Service, 0),
 	}
 }
