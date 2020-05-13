@@ -73,6 +73,7 @@ func (m *HttpUpstreamMiddleware) OnRpcRequest(session *rpc.JSONRpcRequestSession
 		return
 	}
 	log.Debugln("http stream receive rpc request for backend " + targetEndpoint)
+	session.TargetServer = targetEndpoint
 	// create response future before to use in ProcessRpcRequest
 	session.RpcResponseFutureChan = make(chan *rpc.JSONRpcResponse, 1)
 	rpcRequest := session.Request

@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/zoowii/jsonrpc_proxygo/common"
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 	"github.com/zoowii/jsonrpc_proxygo/plugins/statistic"
@@ -42,6 +43,27 @@ func allowCors(writer *http.ResponseWriter, request *http.Request) {
 	(*writer).Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Content-Length")
 }
 
+func sendErrorResponse(writer http.ResponseWriter, e error) {
+	writer.WriteHeader(http.StatusInternalServerError)
+	m := struct{
+		Error struct{
+			Message string `json:"message"`
+		} `json:"error"`
+	}{}
+	m.Error.Message = e.Error()
+	mBytes, jsonErr := json.Marshal(m)
+	if jsonErr != nil {
+		log.Fatalln("json marshal error", jsonErr)
+		return
+	}
+	_, writerErr := writer.Write(mBytes)
+	if writerErr != nil {
+		log.Fatalln("http write response error", writerErr)
+		return
+	}
+	return
+}
+
 func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 	store := statistic.UsedMetricStore
 	r := m.mOptions.Registry
@@ -51,20 +73,19 @@ func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 		allowCors(&writer, request)
 
 		if store == nil {
-			writer.WriteHeader(http.StatusInternalServerError)
-			writer.Write([]byte("metricStore not init"))
+			sendErrorResponse(writer, errors.New("metric store not init"))
 			return
 		}
 		statInfo, err := store.DumpStatInfo()
 		if err != nil {
-			writer.Write([]byte(err.Error()))
+			sendErrorResponse(writer, err)
 			return
 		}
 
 		if r != nil {
 			services, err := r.ListServices()
 			if err != nil {
-				writer.Write([]byte(err.Error()))
+				sendErrorResponse(writer, err)
 				return
 			}
 			upstreamServices := make([]*registry.Service, 0)
@@ -79,7 +100,7 @@ func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 
 		mBytes, err := json.Marshal(statInfo)
 		if err != nil {
-			writer.Write([]byte(err.Error()))
+			sendErrorResponse(writer, err)
 			return
 		}
 		writer.Write(mBytes)
@@ -102,7 +123,6 @@ func (middleware *DashboardMiddleware) OnStart() (err error) {
 			log.Fatalf("dashboard server error %s", err.Error())
 		}
 	}()
-	// TODO: start web listen endpoint
 	return middleware.NextOnStart()
 }
 

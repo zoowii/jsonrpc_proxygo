@@ -85,6 +85,9 @@ type JSONRpcRequestSession struct {
 
 	// before_cache middleware shared fields
 	MethodNameForCache *string // only used to find cache in cache middleware
+
+	// selected upstream target server url
+	TargetServer string
 }
 
 func NewJSONRpcRequestSession(conn *ConnectionSession) *JSONRpcRequestSession {

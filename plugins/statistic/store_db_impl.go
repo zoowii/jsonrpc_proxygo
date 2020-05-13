@@ -58,7 +58,7 @@ func (store *metricDbStore) LogRequest(ctx context.Context, reqSession *rpc.JSON
 	}
 	id := nextId(store.sf)
 	annotation := "sr"
-	traceId := reqSession.Request.Id // TODO
+	traceId := reqSession.Request.Id
 	rpcRequestId := fmt.Sprintf("%d", reqSession.Request.Id)
 	rpcMethodName := reqSession.Request.Method
 	var rpcRequestParams string
@@ -67,7 +67,7 @@ func (store *metricDbStore) LogRequest(ctx context.Context, reqSession *rpc.JSON
 	}
 	rpcResponseError := ""
 	rpcResponseResult := ""
-	targetServer := "" // TODO
+	targetServer := reqSession.TargetServer
 	_, err = stmt.Exec(id, annotation, traceId, rpcRequestId, rpcMethodName, rpcRequestParams,
 		rpcResponseError, rpcResponseResult, targetServer)
 	if err != nil {
@@ -101,7 +101,7 @@ func (store *metricDbStore) logResponse(ctx context.Context, reqSession *rpc.JSO
 	}
 	id := nextId(store.sf)
 	annotation := "ss"
-	traceId := reqSession.Request.Id // TODO
+	traceId := reqSession.Request.Id
 	rpcRequestId := fmt.Sprintf("%d", reqSession.Request.Id)
 	rpcMethodName := reqSession.Request.Method
 	var rpcRequestParams string
@@ -123,7 +123,7 @@ func (store *metricDbStore) logResponse(ctx context.Context, reqSession *rpc.JSO
 			rpcResponseResult = utils.JsonDumpsToStringSilently(response.Result, "")
 		}
 	}
-	targetServer := "" // TODO
+	targetServer := reqSession.TargetServer
 	_, err = stmt.Exec(id, annotation, traceId, rpcRequestId, rpcMethodName, rpcRequestParams,
 		rpcResponseError, rpcResponseResult, targetServer)
 	if err != nil {
