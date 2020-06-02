@@ -103,7 +103,11 @@ func ConsulRegisterService(consulConfig *config.ConsulConfig, wholeConfig *confi
 	checkId := fmt.Sprintf("service:%s:health_checker", consulConfig.Id)
 	checkConf["CheckID"] = checkId
 	consulConfig.HealthCheckId = checkId
-	checkConf["TTL"] = "3m" // TODO: 从配置中加载心跳检测的TTL
+	serviceTtl := consulConfig.ServiceTtl // 心跳检测的TTL
+	if len(serviceTtl) < 1 {
+		serviceTtl = "3m"
+	}
+	checkConf["TTL"] = serviceTtl
 	payload := &registerServicePayloadType{
 		ID:                StringOrElse(consulConfig.Id, "jsonrpc_proxygo_1"),
 		Name:              StringOrElse(consulConfig.Name, "jsonrpc_proxygo"),

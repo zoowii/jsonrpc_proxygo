@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/zoowii/jsonrpc_proxygo/common"
@@ -9,6 +10,7 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/registry"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -104,6 +106,51 @@ func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 			return
 		}
 		writer.Write(mBytes)
+	})
+	http.HandleFunc("/api/list_request_span", func(writer http.ResponseWriter, request *http.Request) {
+		log.Info("receive list_request_span api")
+		allowCors(&writer, request)
+		if request.Method == "OPTIONS" {
+			writer.WriteHeader(http.StatusOK)
+			return
+		}
+		if store == nil {
+			sendErrorResponse(writer, errors.New("metric store not init"))
+			return
+		}
+		bodyBytes, err := ioutil.ReadAll(request.Body)
+		if err != nil {
+			sendErrorResponse(writer, err)
+			return
+		}
+		form := &statistic.QueryLogForm{
+			Offset: 0,
+			Limit: 20,
+		}
+		err = json.Unmarshal(bodyBytes, form)
+		if err != nil {
+			sendErrorResponse(writer, err)
+			return
+		}
+		if form.Offset < 0 {
+			form.Offset = 0
+		}
+		if form.Limit <= 0 {
+			form.Limit = 20
+		}
+		reqSpanList, err := store.QueryRequestSpanList(context.Background(), form)
+		if err != nil {
+			sendErrorResponse(writer, err)
+			return
+		}
+
+		mBytes, err := json.Marshal(reqSpanList)
+		if err != nil {
+			sendErrorResponse(writer, err)
+			return
+		}
+		writer.Write(mBytes)
+
 	})
 	// TODO: 更多的API
 	return nil

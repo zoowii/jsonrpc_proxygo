@@ -24,6 +24,11 @@ export default new Router({
           component: () => import('@/views/dashboard/pages/UpstreamList'),
         },
         {
+          name: 'Request List',
+          path: 'pages/requestlist',
+          component: () => import('@/views/dashboard/pages/RequestList'),
+        },
+        {
           name: 'User Profile',
           path: 'pages/user',
           component: () => import('@/views/dashboard/pages/UserProfile'),

@@ -13,6 +13,7 @@ type ConsulConfig struct {
 	Id                         string   `json:"id,omitempty"`            // 服务id
 	Name                       string   `json:"name,omitempty"`          // 服务名称
 	Tags                       []string `json:"tags,omitempty"`          // 注册服务的标签
+	ServiceTtl							string `json:"service_ttl,omitempty"` // 注册服务的TTL,比如 "3m"
 	HealthCheckIntervalSeconds int      `json:"health_checker_interval"` // consul服务心跳上报的间隔秒数
 
 	ConfigFileResolver string `json:"config_file_resolver,omitempty"` // 加载整个config文件的consul kv http路径

@@ -55,6 +55,10 @@ export default new Vuex.Store({
       upstreamServices: [],
       services: [],
     },
+    requestSpanList: {
+      items: [],
+      total: 0,
+    },
   },
   mutations: {
     SET_BAR_IMAGE (state, payload) {
@@ -69,6 +73,12 @@ export default new Vuex.Store({
       }
       state.statistics = payload
     },
+    setRequestSpanList (state, payload) {
+      if (!payload) {
+        return
+      }
+      state.requestSpanList = payload
+    },
   },
   actions: {
     loadStatistic ({ commit }) {
@@ -78,6 +88,16 @@ export default new Vuex.Store({
           commit('setStatistics', res)
         })
     },
+    loadRequestSpanList ({ commit }, { offset, limit }) {
+      return callApi('/api/list_request_span', 'POST', {
+        offset: offset || 0,
+        limit: limit || 20,
+      }).then(res => {
+        console.log('request spans', res)
+        commit('setRequestSpanList', res)
+        return res
+      })
+    },
   },
   getters: {
     upstreamList (state) {
@@ -85,6 +105,9 @@ export default new Vuex.Store({
     },
     serviceList (state) {
       return state.statistics.services
+    },
+    requestList (state) {
+      return state.requestSpanList
     },
   },
 })

@@ -3,6 +3,7 @@ package statistic
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/sony/sonyflake"
@@ -129,6 +130,55 @@ func (store *metricDbStore) logResponse(ctx context.Context, reqSession *rpc.JSO
 	if err != nil {
 		return
 	}
+}
+
+func (store *metricDbStore) QueryRequestSpanList(ctx context.Context, form *QueryLogForm) (result *RequestSpanListVo, err error) {
+	db := store.db
+	if db == nil {
+		err = errors.New("metric db not init")
+		return
+	}
+	totalRows, err := db.Query("select count(1) from request_span")
+	if err != nil {
+		log.Warn("metric db error", err)
+		return
+	}
+	defer totalRows.Close()
+	var total uint
+	if totalRows.Next() {
+		err = totalRows.Scan(&total)
+		if err != nil {
+			log.Warn("metric db error", err)
+			return
+		}
+	}
+	rows, err := db.Query("select `id`, `annotation`, `trace_id`, `rpc_request_id`, `rpc_method_name`,"+
+		" `rpc_request_params`, `rpc_response_error`, `rpc_response_result`, `target_server`, `log_time`,"+
+		" `create_at`, `update_at` from `request_span` order by `create_at` desc limit ?, ?", form.Offset, form.Limit)
+	if err != nil {
+		log.Warn("metric db error", err)
+		return
+	}
+	defer rows.Close()
+	list := &RequestSpanListVo{
+		Items: make([]*RequestSpanVo, 0),
+		Total: total,
+	}
+	if rows.Next() {
+		for ; rows.Next(); {
+			var item RequestSpanVo
+			err = rows.Scan(&item.Id, &item.Annotation, &item.TraceId, &item.RpcRequestId, &item.RpcMethodName,
+				&item.RpcRequestParams, &item.RpcResponseError, &item.RpcResponseResult, &item.TargetServer,
+				&item.LogTime, &item.CreatedAt, &item.UpdatedAt)
+			if err != nil {
+				log.Warn("metric db error", err)
+				return
+			}
+			list.Items = append(list.Items, &item)
+		}
+	}
+	result = list
+	return
 }
 
 const metricDbStoreName = "db"

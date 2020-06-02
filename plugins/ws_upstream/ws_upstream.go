@@ -115,6 +115,9 @@ func (middleware *WsUpstreamMiddleware) OnConnection(session *rpc.ConnectionSess
 	}
 
 	session.UpstreamRpcRequestsChan = make(chan *rpc.JSONRpcRequestBundle, 1000)
+	if session.SelectedUpstreamTarget == nil {
+		session.SelectedUpstreamTarget = &targetEndpoint
+	}
 
 	go func() {
 		log.Debugf("connecting to %s\n", targetEndpoint)
@@ -242,6 +245,9 @@ func (middleware *WsUpstreamMiddleware) OnRpcRequest(session *rpc.JSONRpcRequest
 
 	// create response future before to use in ProcessRpcRequest
 	session.RpcResponseFutureChan = make(chan *rpc.JSONRpcResponse, 1)
+	if connSession.SelectedUpstreamTarget != nil {
+		session.TargetServer = *connSession.SelectedUpstreamTarget
+	}
 
 	connSession.RpcRequestsDispatchChannel <- &rpc.RpcRequestDispatchData{
 		Type: rpc.RPC_REQUEST_CHANGE_TYPE_ADD_REQUEST,

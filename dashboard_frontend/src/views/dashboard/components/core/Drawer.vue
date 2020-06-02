@@ -116,6 +116,11 @@
           title: 'Services',
           to: '/pages/upstreamlist',
         },
+        {
+          icon: 'mdi-clipboard-outline',
+          title: 'Requests',
+          to: '/pages/requestlist',
+        },
         // {
         //   icon: 'mdi-account',
         //   title: 'user',

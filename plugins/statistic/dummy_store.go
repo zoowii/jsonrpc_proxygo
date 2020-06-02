@@ -21,6 +21,14 @@ func (store *dummyMetricStore) logResponse(ctx context.Context, reqSession *rpc.
 
 }
 
+func (store *dummyMetricStore) QueryRequestSpanList(ctx context.Context, form *QueryLogForm) (*RequestSpanListVo, error) {
+	list := &RequestSpanListVo{
+		Items: make([]*RequestSpanVo, 0),
+		Total: 0,
+	}
+	return list, nil
+}
+
 func (store *dummyMetricStore) Name() string {
 	return "dummy"
 }
@@ -28,4 +36,3 @@ func (store *dummyMetricStore) Name() string {
 func newDefaultMetricStore() MetricStore {
 	return &dummyMetricStore{}
 }
-

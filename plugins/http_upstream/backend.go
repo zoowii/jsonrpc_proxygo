@@ -79,7 +79,10 @@ func (m *HttpUpstreamMiddleware) OnRpcRequest(session *rpc.JSONRpcRequestSession
 	rpcRequest := session.Request
 	rpcRequestBytes, err := json.Marshal(rpcRequest)
 	if err != nil {
-		// TODO: write error rpc response
+		log.Debugln("http rpc request format error", err.Error())
+		errResp := rpc.NewJSONRpcResponse(rpcRequest.Id, nil,
+			rpc.NewJSONRpcResponseError(rpc.RPC_INTERNAL_ERROR, err.Error(), nil))
+		session.RpcResponseFutureChan <- errResp
 		return
 	}
 	log.Debugln("rpc request " + string(rpcRequestBytes))
