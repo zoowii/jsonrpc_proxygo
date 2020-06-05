@@ -7,6 +7,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/sony/sonyflake"
+	"github.com/zoowii/jsonrpc_proxygo/registry"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"time"
@@ -179,6 +180,38 @@ func (store *metricDbStore) QueryRequestSpanList(ctx context.Context, form *Quer
 	}
 	result = list
 	return
+}
+
+func (store *metricDbStore) LogServiceDown(ctx context.Context, service *registry.Service) {
+	db := store.db
+	if db == nil {
+		return
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		log.Warn("metric db error", err)
+		return
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+	stmt, err := tx.Prepare("insert into service_log (`id`, `service_name`, `url`, `down_time`) values (?, ?, ?, ?)")
+	if err != nil {
+		log.Warn("metric db error", err)
+		return
+	}
+	id := nextId(store.sf)
+	serviceName := service.Name
+	serviceUrl := service.Url
+	downTime := time.Now()
+	_, err = stmt.Exec(id, serviceName, serviceUrl, downTime)
+	if err != nil {
+		return
+	}
 }
 
 const metricDbStoreName = "db"

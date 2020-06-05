@@ -15,9 +15,22 @@ CREATE TABLE `request_span` (
 COMMENT = 'each request have some spans';
 
 ALTER TABLE `request_span`
-ADD INDEX `request_span_idx_trace_request` (`trace_id` ASC, `rpc_request_id` ASC) VISIBLE;
+ADD INDEX `request_span_idx_trace_request` (`trace_id` ASC, `rpc_request_id` ASC);
 ;
 
 ALTER TABLE `request_span`
-ADD INDEX `request_span_idx_method_name` (`rpc_method_name` ASC) VISIBLE;
+ADD INDEX `request_span_idx_method_name` (`rpc_method_name` ASC);
+;
+
+CREATE TABLE `service_log` (
+  `id` BIGINT NOT NULL,
+  `service_name` VARCHAR(100) NOT NULL,
+  `url` TEXT NOT NULL,
+  `down_time` TIMESTAMP NULL,
+  `create_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`));
+
+ALTER TABLE `service_log`
+ADD INDEX `service_log_idx_service_name` (`service_name` ASC);
 ;

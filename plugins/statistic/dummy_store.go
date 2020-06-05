@@ -2,6 +2,7 @@ package statistic
 
 import (
 	"context"
+	"github.com/zoowii/jsonrpc_proxygo/registry"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 )
 
@@ -27,6 +28,10 @@ func (store *dummyMetricStore) QueryRequestSpanList(ctx context.Context, form *Q
 		Total: 0,
 	}
 	return list, nil
+}
+
+func (store *dummyMetricStore) LogServiceDown(ctx context.Context, service *registry.Service) {
+
 }
 
 func (store *dummyMetricStore) Name() string {

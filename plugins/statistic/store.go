@@ -2,6 +2,7 @@ package statistic
 
 import (
 	"context"
+	"github.com/zoowii/jsonrpc_proxygo/registry"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"time"
 )
@@ -32,13 +33,15 @@ type RequestSpanListVo struct {
 }
 
 type MetricStore interface {
+	Name() string
 	Init() error
 	// LogRequest store request info. if {includeDebug}==true, store request's content and debug info
 	LogRequest(ctx context.Context, reqSession *rpc.JSONRpcRequestSession, includeDebug bool)
 	// LogRequest store response info. if {includeDebug}==true, store response's content and debug info
 	logResponse(ctx context.Context, reqSession *rpc.JSONRpcRequestSession, includeDebug bool)
 	QueryRequestSpanList(ctx context.Context, form *QueryLogForm) (*RequestSpanListVo, error)
-	Name() string
+
+	LogServiceDown(ctx context.Context, service *registry.Service)
 
 	DumpStatInfo() (dump *StatData, err error)
 	addRpcMethodCall(methodName string)

@@ -184,6 +184,6 @@ func LoadPluginsFromConfig(server *proxy.ProxyServer, configInfo *config.ServerC
 	cache.LoadCachePluginConfig(server.MiddlewareChain, configInfo)
 	cache.LoadBeforeCachePluginConfig(server.MiddlewareChain, configInfo)
 	rate_limit.LoadRateLimitPluginConfig(server.MiddlewareChain, configInfo)
-	statistic.LoadStatisticPluginConfig(server.MiddlewareChain, configInfo)
+	statistic.LoadStatisticPluginConfig(server.MiddlewareChain, configInfo, server.Registry)
 	dashboard.LoadDashboardPluginConfig(server.MiddlewareChain, configInfo, server.Registry)
 }

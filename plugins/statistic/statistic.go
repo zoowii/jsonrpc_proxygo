@@ -10,6 +10,7 @@ import (
 	"context"
 	"github.com/zoowii/jsonrpc_proxygo/common"
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
+	"github.com/zoowii/jsonrpc_proxygo/registry"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
 	"github.com/zoowii/jsonrpc_proxygo/utils"
 	"time"
@@ -24,12 +25,6 @@ type StatisticMiddleware struct {
 	plugin.MiddlewareAdapter
 	rpcRequestsReceived  chan *rpc.JSONRpcRequestSession
 	rpcResponsesReceived chan *rpc.JSONRpcRequestSession
-	//
-	//globalRpcMethodsCount *utils.MemoryCache
-	//
-	//hourlyLock            sync.RWMutex
-	//hourlyStartTime       time.Time
-	//hourlyRpcMethodsCount *utils.MemoryCache
 
 	metricOptions *MetricOptions
 	store         MetricStore
@@ -60,11 +55,8 @@ func NewStatisticMiddleware(options ...common.Option) *StatisticMiddleware {
 	return &StatisticMiddleware{
 		rpcRequestsReceived:  make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
 		rpcResponsesReceived: make(chan *rpc.JSONRpcRequestSession, maxRpcChannelSize),
-		//globalRpcMethodsCount: utils.NewMemoryCache(),
-		//hourlyStartTime:       time.Now(),
-		//hourlyRpcMethodsCount: utils.NewMemoryCache(),
-		metricOptions: mOptions,
-		store:         store,
+		metricOptions:        mOptions,
+		store:                store,
 	}
 }
 
@@ -87,28 +79,26 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 
 		dumpIntervalOpened := middleware.metricOptions.dumpIntervalOpened
 		dumpTick := time.Tick(60 * time.Second)
+
+		// 从registry监听服务上下限，如果有掉线，记录alert
+		r := middleware.metricOptions.r // registry
+		watcher, watcherErr := r.Watch()
+		if watcherErr != nil {
+			log.Error("watch registry error", watcherErr)
+			return
+		}
+		registryEventChan := watcher.C()
+
 		for {
 			select {
 			case <-ctx.Done():
+				watcher.Close()
 				return
 			case <-dumpTick:
 				if !dumpIntervalOpened {
 					continue
 				}
-				// notify user every some time
-				//log.Info("start dump statistic info")
-				//globalStatJson, err := middleware.store.DumpGlobalStatInfoJson()
-				//if err != nil {
-				//	log.Error("dump globalRpcMethodsCount error", err)
-				//	continue
-				//}
-				//hourlyStatJson, err := middleware.store.DumpHourlyStatInfoJson()
-				//if err != nil {
-				//	log.Error("dump hourlyRpcMethodsCount error", err)
-				//	continue
-				//}
-				//log.Infof("globalRpcMethodsCount: %s", string(globalStatJson))
-				//log.Infof("hourlyRpcMethodsCount: %s", string(hourlyStatJson))
+				// notify user every tick time
 			case reqSession := <-middleware.rpcRequestsReceived:
 				methodNameForStatistic := getMethodNameForRpcStatistic(reqSession)
 
@@ -120,6 +110,13 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 			case resSession := <-middleware.rpcResponsesReceived:
 				includeDebug := true
 				store.logResponse(ctx, resSession, includeDebug)
+			case registryEvent := <-registryEventChan:
+				log.Infof("receive registry event %s", registryEvent.String())
+				// 如果是服务掉线，发出提醒记录到数据库
+				switch registryEvent.Type {
+				case registry.SERVICE_REMOVE:
+					store.LogServiceDown(ctx, registryEvent.ServiceInfo)
+				}
 			default:
 				time.Sleep(50 * time.Millisecond)
 			}

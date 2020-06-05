@@ -151,6 +151,4 @@ func createDashboardApis(r registry.Registry) {
 	hs := newApiHandlers(store, r)
 	http.HandleFunc("/api/statistic", hs.statisticApi)
 	http.HandleFunc("/api/list_request_span", hs.listRequestSpanApi)
-
-	// TODO: 更多的API
 }
