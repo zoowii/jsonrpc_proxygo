@@ -144,6 +144,46 @@ func (h *apiHandlers) listRequestSpanApi(writer http.ResponseWriter, request *ht
 	sendResult(writer, reqSpanList)
 }
 
+func (h *apiHandlers) listServiceDownLogsApi(writer http.ResponseWriter, request *http.Request) {
+	log.Info("receive list_service_down_logs api")
+	allowCors(&writer, request)
+	store := h.store
+
+	if request.Method == "OPTIONS" {
+		writer.WriteHeader(http.StatusOK)
+		return
+	}
+	if store == nil {
+		sendErrorResponse(writer, errors.New("metric store not init"))
+		return
+	}
+	type formType struct {
+		Offset int `json:"offset"`
+		Limit int `json:"limit"`
+	}
+	form := &formType{
+		Offset: 0,
+		Limit: 20,
+	}
+	err := readJsonBody(request, form)
+	if err != nil {
+		sendErrorResponse(writer, err)
+		return
+	}
+	if form.Offset < 0 {
+		form.Offset = 0
+	}
+	if form.Limit <= 0 {
+		form.Limit = 20
+	}
+	reqSpanList, err := store.QueryServiceDownLogs(context.Background(), form.Offset, form.Limit)
+	if err != nil {
+		sendErrorResponse(writer, err)
+		return
+	}
+
+	sendResult(writer, reqSpanList)
+}
 
 func createDashboardApis(r registry.Registry) {
 	store := statistic.UsedMetricStore
@@ -151,4 +191,5 @@ func createDashboardApis(r registry.Registry) {
 	hs := newApiHandlers(store, r)
 	http.HandleFunc("/api/statistic", hs.statisticApi)
 	http.HandleFunc("/api/list_request_span", hs.listRequestSpanApi)
+	http.HandleFunc("/api/list_service_down_logs", hs.listServiceDownLogsApi)
 }

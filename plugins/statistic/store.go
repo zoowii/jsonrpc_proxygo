@@ -22,7 +22,7 @@ type RequestSpanVo struct {
 	RpcResponseError  string    `json:"rpcResponseError"`
 	RpcResponseResult string    `json:"rpcResponseResult"`
 	TargetServer      string    `json:"targetServer"`
-	LogTime           time.Time `json:"logTime"`
+	LogTime           *time.Time `json:"logTime"`
 	CreatedAt         time.Time `json:"createdAt"`
 	UpdatedAt         time.Time `json:"updatedAt"`
 }
@@ -30,6 +30,20 @@ type RequestSpanVo struct {
 type RequestSpanListVo struct {
 	Items []*RequestSpanVo `json:"items"`
 	Total uint             `json:"total"`
+}
+
+type ServiceLogVo struct {
+	Id uint64 `json:"id"`
+	ServiceName string `json:"serviceName"`
+	Url string `json:"url"`
+	DownTime *time.Time `json:"downTime"`
+	CreatedAt         time.Time `json:"createdAt"`
+	UpdatedAt         time.Time `json:"updatedAt"`
+}
+
+type ServiceLogListVo struct {
+	Items []*ServiceLogVo `json:"items"`
+	Total uint `json:"total"`
 }
 
 type MetricStore interface {
@@ -42,6 +56,7 @@ type MetricStore interface {
 	QueryRequestSpanList(ctx context.Context, form *QueryLogForm) (*RequestSpanListVo, error)
 
 	LogServiceDown(ctx context.Context, service *registry.Service)
+	QueryServiceDownLogs(ctx context.Context, offset int, limit int) (*ServiceLogListVo, error)
 
 	DumpStatInfo() (dump *StatData, err error)
 	addRpcMethodCall(methodName string)

@@ -34,6 +34,14 @@ func (store *dummyMetricStore) LogServiceDown(ctx context.Context, service *regi
 
 }
 
+func (store *dummyMetricStore) QueryServiceDownLogs(ctx context.Context, offset int, limit int) (*ServiceLogListVo, error) {
+	list := &ServiceLogListVo{
+		Items: make([]*ServiceLogVo, 0),
+		Total: 0,
+	}
+	return list, nil
+}
+
 func (store *dummyMetricStore) Name() string {
 	return "dummy"
 }

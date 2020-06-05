@@ -59,6 +59,10 @@ export default new Vuex.Store({
       items: [],
       total: 0,
     },
+    serviceDownLogList: {
+      items: [],
+      total: 0,
+    },
   },
   mutations: {
     SET_BAR_IMAGE (state, payload) {
@@ -79,6 +83,12 @@ export default new Vuex.Store({
       }
       state.requestSpanList = payload
     },
+    setServiceDownLogList (state, payload) {
+      if (!payload) {
+        return
+      }
+      state.serviceDownLogList = payload
+    },
   },
   actions: {
     loadStatistic ({ commit }) {
@@ -98,6 +108,16 @@ export default new Vuex.Store({
         return res
       })
     },
+    loadServiceDownLogList ({ commit }, { offset, limit }) {
+      return callApi('/api/list_service_down_logs', 'POST', {
+        offset: offset || 0,
+        limit: limit || 20,
+      }).then(res => {
+        console.log('service down logs', res)
+        commit('setServiceDownLogList', res)
+        return res
+      })
+    },
   },
   getters: {
     upstreamList (state) {
@@ -108,6 +128,9 @@ export default new Vuex.Store({
     },
     requestList (state) {
       return state.requestSpanList
+    },
+    serviceDownLogList (state) {
+      return state.serviceDownLogList
     },
   },
 })

@@ -74,7 +74,7 @@ go build
       "start": true,
       "store": {
         "type": "db",
-        "dbUrl": "root:123456@tcp(127.0.0.1:3306)/jsonrpc_proxygo?parseTime=true",
+        "dbUrl": "root:123456@tcp(127.0.0.1:3306)/jsonrpc_proxygo?parseTime=true&loc=Local",
         "dumpIntervalOpened": true
       }
     },

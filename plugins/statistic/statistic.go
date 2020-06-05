@@ -3,7 +3,6 @@ package statistic
 /**
  * statistic middleware
  * async calculate statistic metrics and publish to admin users
- * TODO: publish metrics. now just dump metrics to log interval
  */
 
 import (

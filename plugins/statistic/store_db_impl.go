@@ -34,6 +34,17 @@ type metricDbStore struct {
 	sf    *sonyflake.Sonyflake
 }
 
+func newMetricDbStore(dbUrl string) *metricDbStore {
+	sonyFlakeSettings := sonyflake.Settings{
+		StartTime: time.Unix(0, 0),
+	}
+	sf := sonyflake.NewSonyflake(sonyFlakeSettings)
+	return &metricDbStore{
+		dbUrl: dbUrl,
+		sf:    sf,
+	}
+}
+
 func (store *metricDbStore) LogRequest(ctx context.Context, reqSession *rpc.JSONRpcRequestSession, includeDebug bool) {
 	db := store.db
 	if db == nil {
@@ -46,6 +57,7 @@ func (store *metricDbStore) LogRequest(ctx context.Context, reqSession *rpc.JSON
 	}
 	defer func() {
 		if err != nil {
+			log.Errorf("tx error %s", err.Error())
 			tx.Rollback()
 		} else {
 			tx.Commit()
@@ -89,6 +101,7 @@ func (store *metricDbStore) logResponse(ctx context.Context, reqSession *rpc.JSO
 	}
 	defer func() {
 		if err != nil {
+			log.Errorf("tx error %s", err.Error())
 			tx.Rollback()
 		} else {
 			tx.Commit()
@@ -165,18 +178,16 @@ func (store *metricDbStore) QueryRequestSpanList(ctx context.Context, form *Quer
 		Items: make([]*RequestSpanVo, 0),
 		Total: total,
 	}
-	if rows.Next() {
-		for ; rows.Next(); {
-			var item RequestSpanVo
-			err = rows.Scan(&item.Id, &item.Annotation, &item.TraceId, &item.RpcRequestId, &item.RpcMethodName,
-				&item.RpcRequestParams, &item.RpcResponseError, &item.RpcResponseResult, &item.TargetServer,
-				&item.LogTime, &item.CreatedAt, &item.UpdatedAt)
-			if err != nil {
-				log.Warn("metric db error", err)
-				return
-			}
-			list.Items = append(list.Items, &item)
+	for ; rows.Next(); {
+		var item RequestSpanVo
+		err = rows.Scan(&item.Id, &item.Annotation, &item.TraceId, &item.RpcRequestId, &item.RpcMethodName,
+			&item.RpcRequestParams, &item.RpcResponseError, &item.RpcResponseResult, &item.TargetServer,
+			&item.LogTime, &item.CreatedAt, &item.UpdatedAt)
+		if err != nil {
+			log.Warn("metric db error", err)
+			return
 		}
+		list.Items = append(list.Items, &item)
 	}
 	result = list
 	return
@@ -194,6 +205,7 @@ func (store *metricDbStore) LogServiceDown(ctx context.Context, service *registr
 	}
 	defer func() {
 		if err != nil {
+			log.Errorf("tx error %s", err.Error())
 			tx.Rollback()
 		} else {
 			tx.Commit()
@@ -205,13 +217,58 @@ func (store *metricDbStore) LogServiceDown(ctx context.Context, service *registr
 		return
 	}
 	id := nextId(store.sf)
+	log.Infof("new service_log id %d", id)
 	serviceName := service.Name
 	serviceUrl := service.Url
-	downTime := time.Now()
+	downTime := time.Now().UTC()
 	_, err = stmt.Exec(id, serviceName, serviceUrl, downTime)
 	if err != nil {
 		return
 	}
+}
+
+func (store *metricDbStore) QueryServiceDownLogs(ctx context.Context, offset int, limit int) (result *ServiceLogListVo, err error) {
+	db := store.db
+	if db == nil {
+		err = errors.New("metric db not init")
+		return
+	}
+	totalRows, err := db.Query("select count(1) from service_log where `down_time` is not null")
+	if err != nil {
+		log.Warn("metric db error", err)
+		return
+	}
+	defer totalRows.Close()
+	var total uint
+	if totalRows.Next() {
+		err = totalRows.Scan(&total)
+		if err != nil {
+			log.Warn("metric db error", err)
+			return
+		}
+	}
+	rows, err := db.Query("select `id`, `service_name`, `url`, `down_time`,"+
+		" `create_at`, `update_at` from `service_log` where `down_time` is not null order by `create_at` desc limit ?, ?", offset, limit)
+	if err != nil {
+		log.Warn("metric db error", err)
+		return
+	}
+	defer rows.Close()
+	list := &ServiceLogListVo{
+		Items: make([]*ServiceLogVo, 0),
+		Total: total,
+	}
+	for ; rows.Next(); {
+		var item ServiceLogVo
+		err = rows.Scan(&item.Id, &item.ServiceName, &item.Url, &item.DownTime, &item.CreatedAt, &item.UpdatedAt)
+		if err != nil {
+			log.Warn("metric db error", err)
+			return
+		}
+		list.Items = append(list.Items, &item)
+	}
+	result = list
+	return
 }
 
 const metricDbStoreName = "db"
@@ -233,13 +290,3 @@ func (store *metricDbStore) Init() error {
 	return nil
 }
 
-func newMetricDbStore(dbUrl string) *metricDbStore {
-	sonyFlakeSettings := sonyflake.Settings{
-		StartTime: time.Now(),
-	}
-	sf := sonyflake.NewSonyflake(sonyFlakeSettings)
-	return &metricDbStore{
-		dbUrl: dbUrl,
-		sf:    sf,
-	}
-}

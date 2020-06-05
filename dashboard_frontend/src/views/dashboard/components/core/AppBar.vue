@@ -83,7 +83,7 @@
             bordered
           >
             <template v-slot:badge>
-              <span>5</span>
+              <span>{{serviceDownLogList.total}}</span>
             </template>
 
             <v-icon>mdi-bell</v-icon>
@@ -97,10 +97,10 @@
       >
         <div>
           <app-bar-item
-            v-for="(n, i) in notifications"
+            v-for="(n, i) in serviceDownLogList.items"
             :key="`item-${i}`"
           >
-            <v-list-item-title v-text="n" />
+            <v-list-item-title v-text="getServiceDownLogNotifiction(n)" />
           </app-bar-item>
         </div>
       </v-list>
@@ -122,7 +122,7 @@
   import { VHover, VListItem } from 'vuetify/lib'
 
   // Utilities
-  import { mapState, mapMutations } from 'vuex'
+  import { mapState, mapMutations, mapGetters } from 'vuex'
 
   export default {
     name: 'DashboardCoreAppBar',
@@ -161,23 +161,26 @@
     },
 
     data: () => ({
-      notifications: [
-        'Mike John Responded to your email',
-        'You have 5 new tasks',
-        'You\'re now friends with Andrew',
-        'Another Notification',
-        'Another one',
-      ],
     }),
 
     computed: {
       ...mapState(['drawer']),
+      ...mapGetters(['serviceDownLogList']),
     },
 
     methods: {
       ...mapMutations({
         setDrawer: 'SET_DRAWER',
       }),
+      getServiceDownLogNotifiction (serviceLog) {
+        return `service ${serviceLog.serviceName} down at ${serviceLog.downTime}`
+      },
+    },
+    mounted () {
+      this.$store.dispatch('loadServiceDownLogList', { limit: 8 })
+        .then(res => {
+          console.log('service down logs', res)
+        })
     },
   }
 </script>
