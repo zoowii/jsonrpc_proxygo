@@ -17,20 +17,28 @@ type BeforeCacheConfigItem struct {
  */
 type BeforeCacheMiddleware struct {
 	plugin.MiddlewareAdapter
-	BeforeCacheConfigItems []*BeforeCacheConfigItem
+	beforeCacheConfigItems []*BeforeCacheConfigItem
+	configsMap map[string]*BeforeCacheConfigItem
 }
 
 func NewBeforeCacheMiddleware() *BeforeCacheMiddleware {
-	return &BeforeCacheMiddleware{}
+	return &BeforeCacheMiddleware{
+		configsMap: make(map[string]*BeforeCacheConfigItem),
+	}
 }
 
-func (middleware *BeforeCacheMiddleware) AddConfigItem(item *BeforeCacheConfigItem) *BeforeCacheMiddleware {
-	// TODO: 构造一个字典树，用来使用时快速定位一个请求是否需要做beforeCache的处理
+func (m *BeforeCacheMiddleware) AddConfigItem(item *BeforeCacheConfigItem) *BeforeCacheMiddleware {
 	if item == nil || item.FetchCacheKeyFromParamsCount < 1 {
-		return middleware
+		return m
 	}
-	middleware.BeforeCacheConfigItems = append(middleware.BeforeCacheConfigItems, item)
-	return middleware
+	m.beforeCacheConfigItems = append(m.beforeCacheConfigItems, item)
+	return m
+}
+
+func (m *BeforeCacheMiddleware) Build() {
+	for _, item := range m.beforeCacheConfigItems {
+		m.configsMap[item.MethodName] = item
+	}
 }
 
 func (middleware *BeforeCacheMiddleware) Name() string {
@@ -61,16 +69,13 @@ func (middleware *BeforeCacheMiddleware) findBeforeCacheConfigItem(rpcReq *rpc.J
 	if !parseArrayOk {
 		return
 	}
-	for _, item := range middleware.BeforeCacheConfigItems {
-		if item.MethodName != methodName {
-			continue
+	rpcParamsCount := len(rpcParamsArray)
+	result, ok = middleware.configsMap[methodName]
+	if ok {
+		if rpcParamsCount < result.FetchCacheKeyFromParamsCount {
+			ok = false
+			result = nil
 		}
-		if len(rpcParamsArray) < item.FetchCacheKeyFromParamsCount {
-			continue
-		}
-		result = item
-		ok = true
-		return
 	}
 	return
 }

@@ -31,6 +31,7 @@ func TestMetricDbStore_LogServiceDown(t *testing.T) {
 	service := &registry.Service{
 		Name: "test",
 		Url: "http://test:1234/service" + time.Now().String(),
+		Host: "127.0.0.1",
 	}
 	store.LogServiceDown(ctx, service)
 	log.Infof("LogServiceDown service %s", service.String())

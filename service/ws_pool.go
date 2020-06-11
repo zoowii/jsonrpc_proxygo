@@ -131,7 +131,7 @@ func (p *websocketServiceConnPool) ReleaseStatefulConn(conn ServiceConn) (err er
 	if err != nil {
 		return
 	}
-	// TODO: 有状态连接不仅要归还还要关闭连接，因为不能被复用了
+	// 有状态连接不仅要归还还要关闭连接，因为不能被复用了
 	err = connPool.GiveBack(conn.GetPoolableConn())
 	if err != nil {
 		return
@@ -143,7 +143,7 @@ func (p *websocketServiceConnPool) ReleaseStatefulConn(conn ServiceConn) (err er
 func (p *websocketServiceConnPool) Shutdown() error {
 	var err error
 	for _, connPool := range p.connPools {
-		// TODO: 关闭连接池中各连接
+		// 关闭连接池中各连接
 		err1 := connPool.Close()
 		if err1 != nil && err == nil {
 			err = err1

@@ -5,6 +5,7 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 	"github.com/zoowii/jsonrpc_proxygo/registry"
 	"net/url"
+	"strings"
 )
 
 func LoadLoadBalancePluginConfig(chain *plugin.MiddlewareChain, configInfo *config.ServerConfig, r registry.Registry) {
@@ -31,9 +32,17 @@ func LoadLoadBalancePluginConfig(chain *plugin.MiddlewareChain, configInfo *conf
 
 		if r != nil {
 			// register service to registry
+			host := ""
+			if itemUriObj, urlErr := url.Parse(itemConf.Url); urlErr == nil {
+				host = itemUriObj.Host
+				if strings.Index(host, ":") > 0 {
+					host = host[:strings.Index(host, ":")]
+				}
+			}
 			err = r.RegisterService(&registry.Service{
 				Name: "upstream",
 				Url:  itemConf.Url,
+				Host: host,
 			})
 			if err != nil {
 				log.Fatalln("register upstream to registry error", err)

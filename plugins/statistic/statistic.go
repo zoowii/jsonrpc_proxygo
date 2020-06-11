@@ -7,6 +7,7 @@ package statistic
 
 import (
 	"context"
+	"github.com/sparrc/go-ping"
 	"github.com/zoowii/jsonrpc_proxygo/common"
 	"github.com/zoowii/jsonrpc_proxygo/plugin"
 	"github.com/zoowii/jsonrpc_proxygo/registry"
@@ -88,6 +89,9 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 		}
 		registryEventChan := watcher.C()
 
+		// 定时检测到各upstream的ping连接
+		pingTick := time.Tick(5 * time.Minute)
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -98,6 +102,36 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 					continue
 				}
 				// notify user every tick time
+			case <- pingTick:
+				// ping all upstream servers
+				allServices, listErr := r.ListServices()
+				if listErr != nil {
+					continue
+				}
+				for _, s := range allServices {
+					if len(s.Host) < 1 {
+						continue
+					}
+					host := s.Host
+					go func() {
+						log.Infof("start ping %s", host)
+						pinger, pingErr := ping.NewPinger(host)
+						if pingErr != nil {
+							return
+						}
+						pinger.Count = 3
+						pinger.SetPrivileged(true)
+						pinger.Run()// blocks until finished
+						stats := pinger.Statistics()
+						if stats.PacketsRecv < 1 {
+							log.Errorf("service host %s ping error", host)
+						}
+						rtt := stats.AvgRtt
+						log.Infof("service host %s avg RTT %d ms", host, rtt.Milliseconds())
+						// TODO: update to store
+					}()
+				}
+
 			case reqSession := <-middleware.rpcRequestsReceived:
 				methodNameForStatistic := getMethodNameForRpcStatistic(reqSession)
 

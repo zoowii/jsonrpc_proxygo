@@ -49,6 +49,7 @@ func LoadBeforeCachePluginConfig(chain *plugin.MiddlewareChain, configInfo *conf
 			beforeCacheMiddleware.AddConfigItem(item)
 			usingBeforeCacheItemCount++
 		}
+		beforeCacheMiddleware.Build()
 		if usingBeforeCacheItemCount > 0 {
 			chain.InsertHead(beforeCacheMiddleware)
 		}

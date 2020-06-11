@@ -74,7 +74,6 @@ func readJsonBody(request *http.Request, value interface{}) (err error) {
 func (h *apiHandlers) statisticApi(writer http.ResponseWriter, request *http.Request) {
 	// 统计摘要数据
 	log.Info("receive /api/statistic")
-	allowCors(&writer, request)
 	store := h.store
 	r := h.r
 
@@ -109,13 +108,7 @@ func (h *apiHandlers) statisticApi(writer http.ResponseWriter, request *http.Req
 
 func (h *apiHandlers) listRequestSpanApi(writer http.ResponseWriter, request *http.Request) {
 	log.Info("receive list_request_span api")
-	allowCors(&writer, request)
 	store := h.store
-
-	if request.Method == "OPTIONS" {
-		writer.WriteHeader(http.StatusOK)
-		return
-	}
 	if store == nil {
 		sendErrorResponse(writer, errors.New("metric store not init"))
 		return
@@ -146,13 +139,7 @@ func (h *apiHandlers) listRequestSpanApi(writer http.ResponseWriter, request *ht
 
 func (h *apiHandlers) listServiceDownLogsApi(writer http.ResponseWriter, request *http.Request) {
 	log.Info("receive list_service_down_logs api")
-	allowCors(&writer, request)
 	store := h.store
-
-	if request.Method == "OPTIONS" {
-		writer.WriteHeader(http.StatusOK)
-		return
-	}
 	if store == nil {
 		sendErrorResponse(writer, errors.New("metric store not init"))
 		return
@@ -185,11 +172,22 @@ func (h *apiHandlers) listServiceDownLogsApi(writer http.ResponseWriter, request
 	sendResult(writer, reqSpanList)
 }
 
+func (h *apiHandlers) wrapApi(handlerFunc http.HandlerFunc) http.HandlerFunc {
+	return func (writer http.ResponseWriter, request *http.Request) {
+		allowCors(&writer, request)
+		if request.Method == http.MethodOptions {
+			writer.WriteHeader(http.StatusOK)
+			return
+		}
+		handlerFunc(writer, request)
+	}
+}
+
 func createDashboardApis(r registry.Registry) {
 	store := statistic.UsedMetricStore
 
 	hs := newApiHandlers(store, r)
-	http.HandleFunc("/api/statistic", hs.statisticApi)
-	http.HandleFunc("/api/list_request_span", hs.listRequestSpanApi)
-	http.HandleFunc("/api/list_service_down_logs", hs.listServiceDownLogsApi)
+	http.HandleFunc("/api/statistic", hs.wrapApi(hs.statisticApi))
+	http.HandleFunc("/api/list_request_span", hs.wrapApi(hs.listRequestSpanApi))
+	http.HandleFunc("/api/list_service_down_logs", hs.wrapApi(hs.listServiceDownLogsApi))
 }

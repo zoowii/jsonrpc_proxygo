@@ -128,11 +128,11 @@ func (provider *HttpJsonRpcProvider) watchConnectionMessages(ctx context.Context
 }
 
 func (provider *HttpJsonRpcProvider) serverHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "OPTIONS" {
+	if r.Method == http.MethodOptions {
 		_, _ = w.Write([]byte("ok"))
 		return
 	}
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		resErr := rpc.NewJSONRpcResponseError(rpc.RPC_INTERNAL_ERROR, "only support POST method", nil)
 		errRes := rpc.NewJSONRpcResponse(0, nil, resErr)
 		errResBytes, encodeErr := json.Marshal(errRes)

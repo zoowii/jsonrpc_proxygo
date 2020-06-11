@@ -11,5 +11,6 @@ require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/sirupsen/logrus v1.4.2
 	github.com/sony/sonyflake v1.0.0
+	github.com/sparrc/go-ping v0.0.0-20190613174326-4e5b6552494c
 	github.com/stretchr/testify v1.2.2
 )
