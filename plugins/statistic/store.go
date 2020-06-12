@@ -13,18 +13,18 @@ type QueryLogForm struct {
 }
 
 type RequestSpanVo struct {
-	Id                uint64    `json:"id"`
-	Annotation        string    `json:"annotation"`
-	TraceId           string    `json:"traceId"`
-	RpcRequestId      string    `json:"rpcRequestId"`
-	RpcMethodName     string    `json:"rpcMethodName"`
-	RpcRequestParams  string    `json:"rpcRequestParams"`
-	RpcResponseError  string    `json:"rpcResponseError"`
-	RpcResponseResult string    `json:"rpcResponseResult"`
-	TargetServer      string    `json:"targetServer"`
+	Id                uint64     `json:"id"`
+	Annotation        string     `json:"annotation"`
+	TraceId           string     `json:"traceId"`
+	RpcRequestId      string     `json:"rpcRequestId"`
+	RpcMethodName     string     `json:"rpcMethodName"`
+	RpcRequestParams  string     `json:"rpcRequestParams"`
+	RpcResponseError  string     `json:"rpcResponseError"`
+	RpcResponseResult string     `json:"rpcResponseResult"`
+	TargetServer      string     `json:"targetServer"`
 	LogTime           *time.Time `json:"logTime"`
-	CreatedAt         time.Time `json:"createdAt"`
-	UpdatedAt         time.Time `json:"updatedAt"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
 }
 
 type RequestSpanListVo struct {
@@ -33,17 +33,28 @@ type RequestSpanListVo struct {
 }
 
 type ServiceLogVo struct {
-	Id uint64 `json:"id"`
-	ServiceName string `json:"serviceName"`
-	Url string `json:"url"`
-	DownTime *time.Time `json:"downTime"`
-	CreatedAt         time.Time `json:"createdAt"`
-	UpdatedAt         time.Time `json:"updatedAt"`
+	Id          uint64     `json:"id"`
+	ServiceName string     `json:"serviceName"`
+	Url         string     `json:"url"`
+	DownTime    *time.Time `json:"downTime"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
 }
 
 type ServiceLogListVo struct {
 	Items []*ServiceLogVo `json:"items"`
-	Total uint `json:"total"`
+	Total uint            `json:"total"`
+}
+
+type ServiceHealthVo struct {
+	Id          uint64        `json:"id"`
+	ServiceName string        `json:"service_name"`
+	ServiceUrl  string        `json:"service_url"`
+	ServiceHost string        `json:"service_host"`
+	Rtt         time.Duration `json:"rtt"`
+	Connected   bool          `json:"connected"`
+	CreatedAt   time.Time     `json:"createdAt"`
+	UpdatedAt   time.Time     `json:"updatedAt"`
 }
 
 type MetricStore interface {
@@ -57,6 +68,9 @@ type MetricStore interface {
 
 	LogServiceDown(ctx context.Context, service *registry.Service)
 	QueryServiceDownLogs(ctx context.Context, offset int, limit int) (*ServiceLogListVo, error)
+
+	UpdateServiceHostPing(ctx context.Context, service *registry.Service, rtt time.Duration, connected bool)
+	QueryServiceHealth(ctx context.Context, service *registry.Service) (*ServiceHealthVo, error)
 
 	DumpStatInfo() (dump *StatData, err error)
 	addRpcMethodCall(methodName string)

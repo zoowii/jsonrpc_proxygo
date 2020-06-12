@@ -66,3 +66,23 @@ func TestMetricDbStore_QueryServiceDownLogs(t *testing.T) {
 	}
 	log.Infof("QueryServiceDownLogs find %d logs", list.Total)
 }
+
+func TestMetricDbStore_UpdateServiceHostPing(t *testing.T) {
+	store := createTestMetricStore()
+	if store == nil {
+		return
+	}
+	err := store.Init()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	ctx := context.Background()
+	service := &registry.Service{
+		Name: "test",
+		Url: "http://test:1234/service" + time.Now().String(),
+		Host: "127.0.0.1",
+	}
+	store.UpdateServiceHostPing(ctx, service, 1 * time.Second, true)
+	log.Infof("UpdateServiceHostPing service %s", service.String())
+}

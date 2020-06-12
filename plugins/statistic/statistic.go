@@ -90,7 +90,7 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 		registryEventChan := watcher.C()
 
 		// 定时检测到各upstream的ping连接
-		pingTick := time.Tick(5 * time.Minute)
+		pingTick := time.Tick(1 * time.Minute) // TODO
 
 		for {
 			select {
@@ -112,8 +112,8 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 					if len(s.Host) < 1 {
 						continue
 					}
-					host := s.Host
-					go func() {
+					go func(s *registry.Service) {
+						host := s.Host
 						log.Infof("start ping %s", host)
 						pinger, pingErr := ping.NewPinger(host)
 						if pingErr != nil {
@@ -123,13 +123,16 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 						pinger.SetPrivileged(true)
 						pinger.Run()// blocks until finished
 						stats := pinger.Statistics()
+						connected := true
 						if stats.PacketsRecv < 1 {
+							connected = false
 							log.Errorf("service host %s ping error", host)
 						}
 						rtt := stats.AvgRtt
 						log.Infof("service host %s avg RTT %d ms", host, rtt.Milliseconds())
-						// TODO: update to store
-					}()
+						// update to store
+						store.UpdateServiceHostPing(context.Background(), s, rtt, connected)
+					}(s)
 				}
 
 			case reqSession := <-middleware.rpcRequestsReceived:

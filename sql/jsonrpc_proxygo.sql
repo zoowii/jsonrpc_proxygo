@@ -34,3 +34,22 @@ CREATE TABLE `service_log` (
 ALTER TABLE `service_log`
 ADD INDEX `service_log_idx_service_name` (`service_name` ASC);
 ;
+
+CREATE TABLE `service_health` (
+  `id` BIGINT NOT NULL,
+  `service_name` VARCHAR(100) NOT NULL,
+  `service_url` varchar(255) NOT NULL,
+  `service_host` VARCHAR(100) NOT NULL,
+  `rtt` INT NULL COMMENT 'rtt milliseconds',
+  `connected` INT(1) NOT NULL,
+  `create_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`));
+
+ALTER TABLE `service_health`
+ADD INDEX `service_health_idx_service_host` (`service_host` ASC);
+ALTER TABLE `service_health`
+ADD INDEX `service_health_idx_service_name` (`service_name` ASC);
+ALTER TABLE `service_health`
+ADD UNIQUE INDEX `service_health_idx_service_url` (`service_url` ASC);
+;

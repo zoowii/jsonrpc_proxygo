@@ -271,6 +271,52 @@ func (store *metricDbStore) QueryServiceDownLogs(ctx context.Context, offset int
 	return
 }
 
+func (store *metricDbStore) UpdateServiceHostPing(ctx context.Context, service *registry.Service, rtt time.Duration, connected bool) {
+	db := store.db
+	if db == nil {
+		return
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		log.Warn("metric db error", err)
+		return
+	}
+	defer func() {
+		if err != nil {
+			log.Errorf("tx error %s", err.Error())
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+	stmt, err := tx.Prepare("insert INTO service_health (`id`, `service_name`, `service_url`, `service_host`, `rtt`, `connected`)" +
+		" VALUES (?, ?, ?, ?, ?, ?)" +
+		" on DUPLICATE  key update `service_url`=?, `service_host`=?, `rtt`=?, `connected`=?")
+	if err != nil {
+		log.Warn("metric db error", err)
+		return
+	}
+	id := nextId(store.sf)
+	log.Infof("replace service_health id %d of host %s", id, service.Host)
+	serviceName := service.Name
+	serviceUrl := service.Url
+	host := service.Host
+	connectedInt := 0
+	if connected {
+		connectedInt = 1
+	}
+	rttInt := rtt.Milliseconds()
+	_, err = stmt.Exec(id, serviceName, serviceUrl, host, rttInt, connectedInt, serviceUrl, host, rttInt, connectedInt)
+	if err != nil {
+		return
+	}
+}
+
+func (store *metricDbStore) QueryServiceHealth(ctx context.Context, service *registry.Service) (*ServiceHealthVo, error) {
+	// TODO: 找到某个服务的ping状态
+	return nil, nil
+}
+
 const metricDbStoreName = "db"
 
 func (store *metricDbStore) Name() string {

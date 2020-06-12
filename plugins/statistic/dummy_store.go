@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/zoowii/jsonrpc_proxygo/registry"
 	"github.com/zoowii/jsonrpc_proxygo/rpc"
+	"time"
 )
 
 type dummyMetricStore struct {
@@ -40,6 +41,14 @@ func (store *dummyMetricStore) QueryServiceDownLogs(ctx context.Context, offset 
 		Total: 0,
 	}
 	return list, nil
+}
+
+func (store *dummyMetricStore) UpdateServiceHostPing(ctx context.Context, service *registry.Service, rtt time.Duration, connected bool) {
+
+}
+
+func (store *dummyMetricStore) QueryServiceHealth(ctx context.Context, service *registry.Service) (*ServiceHealthVo, error) {
+	return nil, nil
 }
 
 func (store *dummyMetricStore) Name() string {
