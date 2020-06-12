@@ -47,7 +47,7 @@ func (store *dummyMetricStore) UpdateServiceHostPing(ctx context.Context, servic
 
 }
 
-func (store *dummyMetricStore) QueryServiceHealth(ctx context.Context, service *registry.Service) (*ServiceHealthVo, error) {
+func (store *dummyMetricStore) QueryServiceHealthByUrl(ctx context.Context, service *registry.Service) (*ServiceHealthVo, error) {
 	return nil, nil
 }
 

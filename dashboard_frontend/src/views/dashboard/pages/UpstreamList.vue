@@ -20,7 +20,20 @@
             <v-data-table
                 :headers="serviceListHeaders"
                 :items="upstreamList"
-                />
+                >
+              <template v-slot:item.rtt="{ item }">
+                {{ getServiceHealthText(item.url) }}
+              </template>
+              <template v-slot:no-data>
+                <v-alert
+                  :value="true"
+                  color="error"
+                  icon="warning"
+                  >
+                  No Services
+                </v-alert>
+              </template>
+            </v-data-table>
           </v-card-text>
         </base-material-card>
       </v-col>
@@ -40,7 +53,20 @@
             <v-data-table
                 :headers="serviceListHeaders"
                 :items="serviceList"
-                />
+                >
+              <template v-slot:item.rtt="{ item }">
+                {{ getServiceHealthText(item.url) }}
+              </template>
+              <template v-slot:no-data>
+                <v-alert
+                  :value="true"
+                  color="error"
+                  icon="warning"
+                  >
+                  No Services
+                </v-alert>
+              </template>
+            </v-data-table>
           </v-card-text>
         </base-material-card>
       </v-col>
@@ -65,8 +91,14 @@ export default {
           sortable: false,
           text: "Url",
           value: "url"
-        }
-      ]
+        },
+        {
+          sortable: false,
+          text: "Ping",
+          value: "rtt"
+        },
+      ],
+      healths: {},
     };
   },
   computed: {
@@ -74,6 +106,28 @@ export default {
   },
   mounted () {
       this.$store.dispatch('loadStatistic')
+        .then(res => {
+          console.log('statistic', res)
+          const services = this.serviceList
+          console.log('services', services)
+          for(const service of services) {
+            this.$store.dispatch('queryServiceHealthByUrl', service.url)
+              .then(health => {
+                console.log(`service ${service.url} health status`, health)
+                this.$set(this.healths, service.url, health)
+              })
+          }
+        })
+  },
+  methods: {
+    getServiceHealthText(serviceUrl) {
+      const health = this.healths[serviceUrl]
+      if(!health) {
+        return 'not connected'
+      } else {
+        return `${health.rtt} ms`
+      }
+    }
   }
 };
 </script>

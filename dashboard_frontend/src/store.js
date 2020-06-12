@@ -118,6 +118,12 @@ export default new Vuex.Store({
         return res
       })
     },
+    queryServiceHealthByUrl ({ commit }, serviceUrl) {
+      (() => {})(commit)
+      return callApi('/api/query_service_health', 'POST', {
+        url: serviceUrl,
+      })
+    },
   },
   getters: {
     upstreamList (state) {

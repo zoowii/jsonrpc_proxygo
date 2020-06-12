@@ -312,9 +312,38 @@ func (store *metricDbStore) UpdateServiceHostPing(ctx context.Context, service *
 	}
 }
 
-func (store *metricDbStore) QueryServiceHealth(ctx context.Context, service *registry.Service) (*ServiceHealthVo, error) {
-	// TODO: 找到某个服务的ping状态
-	return nil, nil
+func (store *metricDbStore) QueryServiceHealthByUrl(ctx context.Context, service *registry.Service) (result *ServiceHealthVo, err error) {
+	// 找到某个服务的ping状态
+	db := store.db
+	if db == nil {
+		err = errors.New("metric db not init")
+		return
+	}
+	serviceUrl := service.Url
+	rows, err := db.Query("select `id`, `service_name`, `service_url`, `service_host`, `rtt`, `connected`,"+
+		" `create_at`, `update_at` from `service_health` where service_url=?", serviceUrl)
+	if err != nil {
+		log.Warn("metric db error", err)
+		return
+	}
+	defer rows.Close()
+	if rows.Next() {
+		var item ServiceHealthVo
+		var connectedInt int
+		err = rows.Scan(&item.Id, &item.ServiceName, &item.ServiceUrl, &item.ServiceHost, &item.Rtt, &connectedInt,
+			&item.CreatedAt, &item.UpdatedAt)
+		if err != nil {
+			log.Warn("metric db error", err)
+			return
+		}
+		if connectedInt > 0 {
+			item.Connected = true
+		} else {
+			item.Connected = false
+		}
+		result = &item
+	}
+	return
 }
 
 const metricDbStoreName = "db"
@@ -335,4 +364,3 @@ func (store *metricDbStore) Init() error {
 	store.db = db
 	return nil
 }
-

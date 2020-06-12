@@ -85,4 +85,15 @@ func TestMetricDbStore_UpdateServiceHostPing(t *testing.T) {
 	}
 	store.UpdateServiceHostPing(ctx, service, 1 * time.Second, true)
 	log.Infof("UpdateServiceHostPing service %s", service.String())
+
+	healthRecord, err := store.QueryServiceHealthByUrl(ctx, service)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if healthRecord == nil {
+		t.Errorf("query no service health record of host %s", service.Host)
+		return
+	}
+	log.Infof("found health record rtt = %d ms", healthRecord.Rtt.Milliseconds())
 }

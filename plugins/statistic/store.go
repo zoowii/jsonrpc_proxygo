@@ -48,10 +48,10 @@ type ServiceLogListVo struct {
 
 type ServiceHealthVo struct {
 	Id          uint64        `json:"id"`
-	ServiceName string        `json:"service_name"`
-	ServiceUrl  string        `json:"service_url"`
-	ServiceHost string        `json:"service_host"`
-	Rtt         time.Duration `json:"rtt"`
+	ServiceName string        `json:"serviceName"`
+	ServiceUrl  string        `json:"serviceUrl"`
+	ServiceHost string        `json:"serviceHost"`
+	Rtt         int64 `json:"rtt"` // milliseconds
 	Connected   bool          `json:"connected"`
 	CreatedAt   time.Time     `json:"createdAt"`
 	UpdatedAt   time.Time     `json:"updatedAt"`
@@ -70,7 +70,7 @@ type MetricStore interface {
 	QueryServiceDownLogs(ctx context.Context, offset int, limit int) (*ServiceLogListVo, error)
 
 	UpdateServiceHostPing(ctx context.Context, service *registry.Service, rtt time.Duration, connected bool)
-	QueryServiceHealth(ctx context.Context, service *registry.Service) (*ServiceHealthVo, error)
+	QueryServiceHealthByUrl(ctx context.Context, service *registry.Service) (*ServiceHealthVo, error)
 
 	DumpStatInfo() (dump *StatData, err error)
 	addRpcMethodCall(methodName string)

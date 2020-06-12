@@ -172,6 +172,38 @@ func (h *apiHandlers) listServiceDownLogsApi(writer http.ResponseWriter, request
 	sendResult(writer, reqSpanList)
 }
 
+func (h *apiHandlers) queryServiceHealthApi(writer http.ResponseWriter, request *http.Request) {
+	log.Info("queryServiceHealthApi called")
+	store := h.store
+	if store == nil {
+		sendErrorResponse(writer, errors.New("metric store not init"))
+		return
+	}
+	type formType struct {
+		Name string `json:"name"`
+		Url string `json:"url"`
+	}
+	form := &formType{}
+	err := readJsonBody(request, form)
+	if err != nil {
+		sendErrorResponse(writer, err)
+		return
+	}
+	if len(form.Name) < 1 && len(form.Url) < 1 {
+		sendErrorResponse(writer, errors.New("empty name and url form"))
+		return
+	}
+	result, err := store.QueryServiceHealthByUrl(context.Background(), &registry.Service{
+		Name: form.Name,
+		Url: form.Url,
+	})
+	if err != nil {
+		sendErrorResponse(writer, err)
+		return
+	}
+	sendResult(writer, result)
+}
+
 func (h *apiHandlers) wrapApi(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func (writer http.ResponseWriter, request *http.Request) {
 		allowCors(&writer, request)
@@ -190,4 +222,5 @@ func createDashboardApis(r registry.Registry) {
 	http.HandleFunc("/api/statistic", hs.wrapApi(hs.statisticApi))
 	http.HandleFunc("/api/list_request_span", hs.wrapApi(hs.listRequestSpanApi))
 	http.HandleFunc("/api/list_service_down_logs", hs.wrapApi(hs.listServiceDownLogsApi))
+	http.HandleFunc("/api/query_service_health", hs.wrapApi(hs.queryServiceHealthApi))
 }
