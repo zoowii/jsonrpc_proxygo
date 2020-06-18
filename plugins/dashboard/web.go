@@ -34,7 +34,8 @@ func (m *DashboardMiddleware) Name() string {
 
 func (m *DashboardMiddleware) createDashboardWebHandler() http.Handler {
 	r := m.mOptions.Registry
-	createDashboardApis(r)
+	store := m.mOptions.Store
+	createDashboardApis(r, store)
 	return nil
 }
 

@@ -184,6 +184,12 @@ func LoadPluginsFromConfig(server *proxy.ProxyServer, configInfo *config.ServerC
 	cache.LoadCachePluginConfig(server.MiddlewareChain, configInfo)
 	cache.LoadBeforeCachePluginConfig(server.MiddlewareChain, configInfo)
 	rate_limit.LoadRateLimitPluginConfig(server.MiddlewareChain, configInfo)
-	statistic.LoadStatisticPluginConfig(server.MiddlewareChain, configInfo, server.Registry)
-	dashboard.LoadDashboardPluginConfig(server.MiddlewareChain, configInfo, server.Registry)
+	statisticPlugin := statistic.LoadStatisticPluginConfig(server.MiddlewareChain, configInfo, server.Registry)
+	var store statistic.MetricStore
+	if statisticPlugin != nil {
+		store = statisticPlugin.GetStore()
+	} else {
+		store = statistic.NewDefaultMetricStore()
+	}
+	dashboard.LoadDashboardPluginConfig(server.MiddlewareChain, configInfo, server.Registry, store)
 }

@@ -22,7 +22,7 @@
                 :items="upstreamList"
                 >
               <template v-slot:item.rtt="{ item }">
-                {{ getServiceHealthText(item.url) }}
+                <span :class="getServiceHealthTextClasses(item.url)">{{ getServiceHealthText(item.url) }}</span>
               </template>
               <template v-slot:no-data>
                 <v-alert
@@ -55,7 +55,7 @@
                 :items="serviceList"
                 >
               <template v-slot:item.rtt="{ item }">
-                {{ getServiceHealthText(item.url) }}
+                <span :class="getServiceHealthTextClasses(item.url)">{{ getServiceHealthText(item.url) }}</span>
               </template>
               <template v-slot:no-data>
                 <v-alert
@@ -120,6 +120,14 @@ export default {
         })
   },
   methods: {
+    getServiceHealthTextClasses(serviceUrl) {
+      const text = this.getServiceHealthText(serviceUrl)
+      if(text==='not connected') {
+        return '-not-connected -ping-text'
+      } else {
+        return '-ping-text'
+      }
+    },
     getServiceHealthText(serviceUrl) {
       const health = this.healths[serviceUrl]
       if(!health) {
@@ -132,5 +140,11 @@ export default {
 };
 </script>
 
-<style lang="less" scoped>
+<style scoped>
+.-ping-text {
+  color: #aaaaaa;
+}
+.-ping-text.-not-connected {
+  color: red;
+}
 </style>

@@ -141,7 +141,6 @@ func (provider *HttpJsonRpcProvider) serverHandler(w http.ResponseWriter, r *htt
 		}
 		return
 	}
-	// TODO: 对于暴露http接口来说，backend upstream不对每次请求都启动一个websocket conn，而是共用一个连接池. 暂时每次都创建新连接
 	connSession := rpc.NewConnectionSession()
 	defer connSession.Close()
 	defer provider.rpcProcessor.OnConnectionClosed(connSession)

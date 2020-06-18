@@ -215,9 +215,7 @@ func (h *apiHandlers) wrapApi(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func createDashboardApis(r registry.Registry) {
-	store := statistic.UsedMetricStore
-
+func createDashboardApis(r registry.Registry, store statistic.MetricStore) {
 	hs := newApiHandlers(store, r)
 	http.HandleFunc("/api/statistic", hs.wrapApi(hs.statisticApi))
 	http.HandleFunc("/api/list_request_span", hs.wrapApi(hs.listRequestSpanApi))

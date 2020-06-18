@@ -7,7 +7,8 @@ import (
 	"github.com/zoowii/jsonrpc_proxygo/registry"
 )
 
-func LoadStatisticPluginConfig(chain *plugin.MiddlewareChain, configInfo *config.ServerConfig, r registry.Registry) {
+func LoadStatisticPluginConfig(chain *plugin.MiddlewareChain,
+	configInfo *config.ServerConfig, r registry.Registry) (result *StatisticMiddleware) {
 	statisticPluginConf := configInfo.Plugins.Statistic
 	if statisticPluginConf.Start {
 		options := make([]common.Option, 0)
@@ -22,7 +23,8 @@ func LoadStatisticPluginConfig(chain *plugin.MiddlewareChain, configInfo *config
 		options = append(options, SetRegistry(r))
 		log.Info("statistic plugin load registry option")
 
-		statisticMiddleware := NewStatisticMiddleware(options...)
-		chain.InsertHead(statisticMiddleware)
+		result = NewStatisticMiddleware(options...)
+		chain.InsertHead(result)
 	}
+	return
 }

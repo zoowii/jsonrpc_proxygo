@@ -18,9 +18,6 @@ import (
 
 var log = utils.GetLogger("statistic")
 
-// 使用中的metricStore，用来暴露给其他组件访问
-var UsedMetricStore MetricStore = nil
-
 type StatisticMiddleware struct {
 	plugin.MiddlewareAdapter
 	rpcRequestsReceived  chan *rpc.JSONRpcRequestSession
@@ -42,10 +39,8 @@ func NewStatisticMiddleware(options ...common.Option) *StatisticMiddleware {
 	if mOptions.store != nil {
 		store = mOptions.store
 	} else {
-		store = newDefaultMetricStore()
+		store = NewDefaultMetricStore()
 	}
-
-	UsedMetricStore = store
 
 	err := store.Init()
 	if err != nil {
@@ -62,6 +57,10 @@ func NewStatisticMiddleware(options ...common.Option) *StatisticMiddleware {
 
 func (middleware *StatisticMiddleware) Name() string {
 	return "statistic"
+}
+
+func (m *StatisticMiddleware) GetStore() MetricStore {
+	return m.store
 }
 
 func getMethodNameForRpcStatistic(session *rpc.JSONRpcRequestSession) string {

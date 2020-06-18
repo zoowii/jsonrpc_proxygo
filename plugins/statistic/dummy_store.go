@@ -55,6 +55,11 @@ func (store *dummyMetricStore) Name() string {
 	return "dummy"
 }
 
-func newDefaultMetricStore() MetricStore {
-	return &dummyMetricStore{}
+func NewDefaultMetricStore() MetricStore {
+	store := &dummyMetricStore{}
+	err := store.Init()
+	if err != nil {
+		log.Error("init default metric store error", err)
+	}
+	return store
 }
