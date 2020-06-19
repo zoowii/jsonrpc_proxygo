@@ -128,7 +128,7 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 							log.Errorf("service host %s ping error", host)
 						}
 						rtt := stats.AvgRtt
-						log.Infof("service host %s avg RTT %d ms", host, rtt.Milliseconds())
+						log.Infof("service host %s avg RTT %d ms", host, rtt.Microseconds() / 1e3)
 						// update to store
 						store.UpdateServiceHostPing(context.Background(), s, rtt, connected)
 					}(s)

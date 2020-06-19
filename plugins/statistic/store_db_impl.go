@@ -305,7 +305,7 @@ func (store *metricDbStore) UpdateServiceHostPing(ctx context.Context, service *
 	if connected {
 		connectedInt = 1
 	}
-	rttInt := rtt.Milliseconds()
+	rttInt := rtt.Microseconds() / 1e3
 	_, err = stmt.Exec(id, serviceName, serviceUrl, host, rttInt, connectedInt, serviceUrl, host, rttInt, connectedInt)
 	if err != nil {
 		return
