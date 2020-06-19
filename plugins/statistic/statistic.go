@@ -81,20 +81,26 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 
 		// 从registry监听服务上下限，如果有掉线，记录alert
 		r := middleware.metricOptions.r // registry
-		watcher, watcherErr := r.Watch()
-		if watcherErr != nil {
-			log.Error("watch registry error", watcherErr)
-			return
+		var watcher *registry.Watcher
+		var registryEventChan chan *registry.Event
+		if r != nil {
+			watcher, watcherErr := r.Watch()
+			if watcherErr != nil {
+				log.Error("watch registry error", watcherErr)
+				return
+			}
+			registryEventChan = watcher.C()
 		}
-		registryEventChan := watcher.C()
 
 		// 定时检测到各upstream的ping连接
-		pingTick := time.Tick(1 * time.Minute) // TODO
+		pingTick := time.Tick(5 * time.Minute)
 
 		for {
 			select {
 			case <-ctx.Done():
-				watcher.Close()
+				if watcher != nil {
+					watcher.Close()
+				}
 				return
 			case <-dumpTick:
 				if !dumpIntervalOpened {
@@ -128,7 +134,7 @@ func (middleware *StatisticMiddleware) OnStart() (err error) {
 							log.Errorf("service host %s ping error", host)
 						}
 						rtt := stats.AvgRtt
-						log.Infof("service host %s avg RTT %d ms", host, rtt.Microseconds() / 1e3)
+						log.Infof("service host %s avg RTT %d ms", host, rtt.Nanoseconds() / 1e6)
 						// update to store
 						store.UpdateServiceHostPing(context.Background(), s, rtt, connected)
 					}(s)
